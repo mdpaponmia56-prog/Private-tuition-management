@@ -1,0 +1,480 @@
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api.js';
+import { DashboardData, PaymentReceipt } from '../types/index.js';
+import { formatBDT, useLanguage } from '../utils/i18n.js';
+import {
+  Users,
+  BookOpen,
+  DollarSign,
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
+  Receipt,
+  MessageSquare,
+  ArrowRight,
+  RefreshCw,
+} from 'lucide-react';
+import { ReceiptModal } from '../components/ReceiptModal.js';
+import { ReminderModal } from '../components/ReminderModal.js';
+
+interface DashboardProps {
+  onNavigate: (tab: any) => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const { language, t } = useLanguage();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Selected period
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+
+  // Modals
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceipt | null>(null);
+  const [selectedReminderStudentId, setSelectedReminderStudentId] = useState<number | null>(null);
+
+  const fetchDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiFetch<DashboardData>(`/api/dashboard?year=${selectedYear}&month=${selectedMonth}`);
+      setData(res);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [selectedMonth, selectedYear]);
+
+  const viewReceipt = async (paymentId: number) => {
+    try {
+      const res = await apiFetch<{ receipt: PaymentReceipt }>(`/api/payments/${paymentId}/receipt`);
+      setSelectedReceipt(res.receipt);
+    } catch (err: any) {
+      alert(err.message || 'Failed to fetch receipt.');
+    }
+  };
+
+  const monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthNamesBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+  const currentMonthNames = language === 'bn' ? monthNamesBn : monthNamesEn;
+
+  return (
+    <div>
+      {/* Header & Filter Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+            {t.dashboard}
+          </h1>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+            Financial overview and real-time tuition performance
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Month selector */}
+          <select
+            className="form-control"
+            style={{ width: 'auto', fontWeight: 600 }}
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+          >
+            {currentMonthNames.map((name, idx) => (
+              <option key={idx + 1} value={idx + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
+
+          {/* Year selector */}
+          <select
+            className="form-control"
+            style={{ width: 'auto', fontWeight: 600 }}
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+          >
+            {[2025, 2026, 2027].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <button type="button" className="btn btn-secondary btn-icon" onClick={fetchDashboard} title="Refresh Dashboard">
+            <RefreshCw size={16} />
+          </button>
+        </div>
+      </div>
+
+      {loading && !data ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+          <RefreshCw size={32} className="spin-animation" style={{ margin: '0 auto 12px' }} />
+          <p>{t.loading}</p>
+        </div>
+      ) : error ? (
+        <div style={{ padding: 20, background: 'var(--danger-bg)', color: 'var(--danger-text)', borderRadius: 'var(--radius-md)' }}>
+          {error}
+        </div>
+      ) : data ? (
+        <>
+          {/* Stat Cards Grid (8 Core Metrics) */}
+          <div className="stat-grid">
+            {/* 1. Active Students */}
+            <div className="stat-card" style={{ '--card-accent': '#0284c7', '--card-bg': '#e0f2fe' } as any}>
+              <div className="stat-icon">
+                <Users size={26} />
+              </div>
+              <div className="stat-info">
+                <div className="stat-label">{t.activeStudents}</div>
+                <div className="stat-value">{data.cards.activeStudents}</div>
+                <div className="stat-sub">{data.cards.totalBatches} {t.totalBatches}</div>
+              </div>
+            </div>
+
+            {/* 2. Expected Fees for Month */}
+            <div className="stat-card" style={{ '--card-accent': '#6366f1', '--card-bg': '#e0e7ff' } as any}>
+              <div className="stat-icon">
+                <TrendingUp size={26} />
+              </div>
+              <div className="stat-info">
+                <div className="stat-label">{t.expectedFeesThisMonth}</div>
+                <div className="stat-value">{formatBDT(data.cards.expectedFees, language)}</div>
+                <div className="stat-sub">{currentMonthNames[selectedMonth - 1]} {selectedYear}</div>
+              </div>
+            </div>
+
+            {/* 3. Collected Fees for Month */}
+            <div className="stat-card" style={{ '--card-accent': '#0d9488', '--card-bg': '#ccfbf1' } as any}>
+              <div className="stat-icon">
+                <DollarSign size={26} />
+              </div>
+              <div className="stat-info">
+                <div className="stat-label">{t.collectedFeesThisMonth}</div>
+                <div className="stat-value" style={{ color: 'var(--primary)' }}>
+                  {formatBDT(data.cards.collectedFees, language)}
+                </div>
+                <div className="stat-sub">
+                  Efficiency: {data.cards.expectedFees > 0 ? Math.round((data.cards.collectedFees / data.cards.expectedFees) * 100) : 0}%
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Total Outstanding All-Time Dues */}
+            <div className="stat-card" style={{ '--card-accent': '#ef4444', '--card-bg': '#fee2e2' } as any}>
+              <div className="stat-icon">
+                <AlertCircle size={26} />
+              </div>
+              <div className="stat-info">
+                <div className="stat-label">{t.totalOutstandingDues}</div>
+                <div className="stat-value" style={{ color: 'var(--danger)' }}>
+                  {formatBDT(data.cards.totalOutstanding, language)}
+                </div>
+                <div className="stat-sub">{data.cards.overdueCount} {t.overdueStudents}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary Stat Mini Cards (Status Distribution) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <CheckCircle2 size={28} color="var(--success)" />
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.fullyPaidStudents}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.fullyPaidCount}</div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <TrendingUp size={28} color="var(--warning)" />
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Partial Payments</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.partialCount}</div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <AlertCircle size={28} color="#64748b" />
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Unpaid (Within Deadline)</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.unpaidCount}</div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <AlertCircle size={28} color="var(--danger)" />
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Overdue Past Grace Period</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--danger)' }}>{data.cards.overdueCount}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Charts & Trends Section */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 28 }}>
+            {/* 6-Month Collection Trend Bar Chart (SVG) */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <TrendingUp size={20} color="var(--primary)" />
+                  <span>{t.monthlyCollectionTrends}</span>
+                </div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Last 6 Months</span>
+              </div>
+
+              <div style={{ padding: '10px 0' }}>
+                {/* SVG Visualizer */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: 180, paddingTop: 20 }}>
+                  {data.monthlyTrends.map((trend, i) => {
+                    const maxVal = Math.max(...data.monthlyTrends.map((t) => Math.max(t.expected, t.collected)), 1000);
+                    const expHeight = Math.max((trend.expected / maxVal) * 140, 4);
+                    const colHeight = Math.max((trend.collected / maxVal) * 140, 4);
+
+                    return (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 140 }}>
+                          {/* Expected Bar */}
+                          <div
+                            title={`Expected: ৳${trend.expected.toLocaleString()}`}
+                            style={{
+                              width: 14,
+                              height: `${expHeight}px`,
+                              background: '#cbd5e1',
+                              borderRadius: '3px 3px 0 0',
+                            }}
+                          />
+                          {/* Collected Bar */}
+                          <div
+                            title={`Collected: ৳${trend.collected.toLocaleString()}`}
+                            style={{
+                              width: 14,
+                              height: `${colHeight}px`,
+                              background: 'var(--primary)',
+                              borderRadius: '3px 3px 0 0',
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {trend.label.split(' ')[0]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 16, fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: '#cbd5e1', borderRadius: 2 }} />
+                    <span>Expected Fee</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, background: 'var(--primary)', borderRadius: 2 }} />
+                    <span>Collected Fee</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Batch Breakdown */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <BookOpen size={20} color="var(--primary)" />
+                  <span>{t.batchPerformance}</span>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('batches')}>
+                  {t.viewAll}
+                </button>
+              </div>
+
+              <div className="table-responsive" style={{ border: 'none' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Batch</th>
+                      <th>Students</th>
+                      <th>Collected</th>
+                      <th>Outstanding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.batchBreakdown.length > 0 ? (
+                      data.batchBreakdown.map((b) => (
+                        <tr key={b.id}>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{b.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{b.code}</div>
+                          </td>
+                          <td>{b.studentCount}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                            {formatBDT(b.collectedAmount, language)}
+                          </td>
+                          <td style={{ color: b.outstandingDue > 0 ? 'var(--danger)' : 'var(--success-text)', fontWeight: 600 }}>
+                            {formatBDT(b.outstandingDue, language)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                          {t.noData}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Grid: Recent Payments & Urgent Follow-ups */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+            {/* Recent Payments */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <Receipt size={20} color="var(--primary)" />
+                  <span>{t.recentPayments}</span>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('payments')}>
+                  {t.viewAll}
+                </button>
+              </div>
+
+              <div className="table-responsive" style={{ border: 'none' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Receipt #</th>
+                      <th>Student</th>
+                      <th>Amount</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.recentPayments.length > 0 ? (
+                      data.recentPayments.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <div style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.receipt_number}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-light)' }}>{p.payment_date}</div>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{p.student_name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.batch_name}</div>
+                          </td>
+                          <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                            {formatBDT(p.amount, language)}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => viewReceipt(p.id)}
+                              title="View & Print Receipt"
+                            >
+                              <Receipt size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                          {t.noData}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Urgent Follow-ups (Overdue Students) */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <MessageSquare size={20} color="var(--danger)" />
+                  <span>{t.urgentFollowUps}</span>
+                </div>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('dues')}>
+                  {t.viewAll}
+                </button>
+              </div>
+
+              <div className="table-responsive" style={{ border: 'none' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Guardian Phone</th>
+                      <th>Due Amount</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.followUpAlerts.length > 0 ? (
+                      data.followUpAlerts.map((s) => (
+                        <tr key={s.student_id}>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{s.full_name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{s.batch_name}</div>
+                          </td>
+                          <td style={{ fontFamily: 'monospace' }}>{s.guardian_phone}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--danger)' }}>
+                            {formatBDT(s.total_due, language)}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              onClick={() => setSelectedReminderStudentId(s.student_id)}
+                              title="Send Reminder"
+                            >
+                              <MessageSquare size={14} />
+                              <span>{t.sendReminder}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                          No overdue students requiring urgent follow-up!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {/* Printable Receipt Modal */}
+      {selectedReceipt && (
+        <ReceiptModal
+          receipt={selectedReceipt}
+          onClose={() => setSelectedReceipt(null)}
+        />
+      )}
+
+      {/* Reminder Message Modal */}
+      {selectedReminderStudentId && (
+        <ReminderModal
+          studentId={selectedReminderStudentId}
+          onClose={() => setSelectedReminderStudentId(null)}
+        />
+      )}
+    </div>
+  );
+};
