@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { query } from '../db/index.js';
+import { query, withTransaction } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { recordAuditLog } from '../middleware/audit.js';
 
@@ -264,67 +264,202 @@ batchRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
 
 /**
  * DELETE /api/batches/:id - Archive or permanently delete batch
+ * Supports:
+ * - Permanent delete for empty batches
+ * - Reassigning students to another batch (reassignToBatchId) and deleting
+ * - Exceptional purge by OWNER with mandatory reason
  */
 batchRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const batchId = parseInt(req.params.id, 10);
-    const permanent = req.query.permanent === 'true';
+    const permanent = req.query.permanent === 'true' || req.body?.permanent === true;
+    const reassignToBatchId = req.query.reassignToBatchId
+      ? parseInt(req.query.reassignToBatchId as string, 10)
+      : (req.body?.reassignToBatchId ? parseInt(req.body.reassignToBatchId, 10) : null);
+    const force = req.query.force === 'true' || req.body?.force === true;
+    const reason = (req.body?.reason || req.query.reason || '') as string;
 
     const existing = await query('SELECT * FROM batches WHERE id = $1', [batchId]);
     if (existing.rows.length === 0) {
       res.status(404).json({ error: 'Batch not found.' });
       return;
     }
+    const batch = existing.rows[0];
 
-    if (permanent) {
-      // Check if students exist in batch
-      const studentCountRes = await query('SELECT COUNT(*) as count FROM students WHERE batch_id = $1', [batchId]);
-      const studentCount = parseInt(studentCountRes.rows[0].count, 10);
-      if (studentCount > 0) {
-        res.status(400).json({ error: `Cannot permanently delete batch: ${studentCount} students are enrolled. Move or archive students first.` });
-        return;
-      }
-
-      // Check if billing records reference this batch
-      const billingCountRes = await query('SELECT COUNT(*) as count FROM billing_records WHERE batch_id = $1', [batchId]);
-      const billingCount = parseInt(billingCountRes.rows[0].count, 10);
-      if (billingCount > 0) {
-        res.status(400).json({ error: `Cannot permanently delete batch: ${billingCount} historical billing records reference this batch. Archive instead.` });
-        return;
-      }
-
-      await query('DELETE FROM batches WHERE id = $1', [batchId]);
+    // If soft-delete (archive) is requested
+    if (!permanent) {
+      await query('UPDATE batches SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [batchId]);
 
       await recordAuditLog({
         adminId: req.admin!.id,
         adminName: req.admin!.fullName,
-        action: 'DELETE_BATCH',
+        action: 'ARCHIVE_BATCH',
         entityType: 'BATCH',
         entityId: batchId,
-        oldValues: existing.rows[0],
+        oldValues: batch,
         ipAddress: req.ip,
       });
 
-      res.json({ message: 'Batch permanently deleted successfully.' });
+      res.json({ message: 'Batch archived successfully.' });
       return;
     }
 
-    // Default: Soft delete / archive
-    await query('UPDATE batches SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [batchId]);
+    // Permanent Deletion Flow
+    const studentCountRes = await query('SELECT COUNT(*) as count FROM students WHERE batch_id = $1', [batchId]);
+    const studentCount = parseInt(studentCountRes.rows[0].count, 10);
+
+    const billingCountRes = await query('SELECT COUNT(*) as count FROM billing_records WHERE batch_id = $1', [batchId]);
+    const billingCount = parseInt(billingCountRes.rows[0].count, 10);
+
+    // CASE 1: Reassign students and billing records to destination batch
+    if (reassignToBatchId) {
+      if (reassignToBatchId === batchId) {
+        res.status(400).json({ error: 'Destination batch must be different from the batch being deleted.' });
+        return;
+      }
+
+      const targetBatchRes = await query('SELECT * FROM batches WHERE id = $1', [reassignToBatchId]);
+      if (targetBatchRes.rows.length === 0) {
+        res.status(404).json({ error: 'Target destination batch not found.' });
+        return;
+      }
+      const targetBatch = targetBatchRes.rows[0];
+
+      await withTransaction(async (client) => {
+        // Move students
+        await client.query(
+          'UPDATE students SET batch_id = $1, updated_at = CURRENT_TIMESTAMP WHERE batch_id = $2',
+          [reassignToBatchId, batchId]
+        );
+        // Move billing records
+        await client.query(
+          'UPDATE billing_records SET batch_id = $1 WHERE batch_id = $2',
+          [reassignToBatchId, batchId]
+        );
+        // Move enrollment history
+        await client.query(
+          'UPDATE enrollment_history SET batch_id = $1 WHERE batch_id = $2',
+          [reassignToBatchId, batchId]
+        );
+        // Delete original batch
+        await client.query('DELETE FROM batches WHERE id = $1', [batchId]);
+
+        await recordAuditLog({
+          adminId: req.admin!.id,
+          adminName: req.admin!.fullName,
+          action: 'REASSIGN_AND_DELETE_BATCH',
+          entityType: 'BATCH',
+          entityId: batchId,
+          oldValues: { batch, studentCount, billingCount },
+          newValues: { targetBatchId: reassignToBatchId, targetBatchName: targetBatch.name },
+          ipAddress: req.ip,
+        });
+      });
+
+      res.json({
+        message: `Batch "${batch.name}" deleted successfully. ${studentCount} students and ${billingCount} billing records reassigned to "${targetBatch.name}".`
+      });
+      return;
+    }
+
+    // CASE 2: Force Purge (Owner only, with audit reason)
+    if (force) {
+      if (req.admin!.role !== 'OWNER') {
+        res.status(403).json({ error: 'Exceptional purge of batches with enrolled students requires OWNER privileges.' });
+        return;
+      }
+      if (!reason || reason.trim().length < 5) {
+        res.status(400).json({ error: 'A valid audit reason (minimum 5 characters) is required for exceptional batch purge.' });
+        return;
+      }
+
+      await withTransaction(async (client) => {
+        // Delete fee adjustments
+        await client.query(
+          `DELETE FROM fee_adjustments WHERE billing_record_id IN (
+            SELECT id FROM billing_records WHERE batch_id = $1 OR student_id IN (SELECT id FROM students WHERE batch_id = $1)
+          )`,
+          [batchId]
+        );
+
+        // Delete payment allocations
+        await client.query(
+          `DELETE FROM payment_allocations WHERE billing_record_id IN (
+            SELECT id FROM billing_records WHERE batch_id = $1 OR student_id IN (SELECT id FROM students WHERE batch_id = $1)
+          ) OR payment_id IN (
+            SELECT id FROM payment_transactions WHERE student_id IN (SELECT id FROM students WHERE batch_id = $1)
+          )`,
+          [batchId]
+        );
+
+        // Delete payment transactions
+        await client.query(
+          `DELETE FROM payment_transactions WHERE student_id IN (SELECT id FROM students WHERE batch_id = $1)`,
+          [batchId]
+        );
+
+        // Delete billing records
+        await client.query(
+          `DELETE FROM billing_records WHERE batch_id = $1 OR student_id IN (SELECT id FROM students WHERE batch_id = $1)`,
+          [batchId]
+        );
+
+        // Delete enrollment history
+        await client.query(
+          `DELETE FROM enrollment_history WHERE batch_id = $1 OR student_id IN (SELECT id FROM students WHERE batch_id = $1)`,
+          [batchId]
+        );
+
+        // Delete students
+        await client.query('DELETE FROM students WHERE batch_id = $1', [batchId]);
+
+        // Delete batch
+        await client.query('DELETE FROM batches WHERE id = $1', [batchId]);
+
+        await recordAuditLog({
+          adminId: req.admin!.id,
+          adminName: req.admin!.fullName,
+          action: 'EXCEPTIONAL_PURGE_BATCH',
+          entityType: 'BATCH',
+          entityId: batchId,
+          oldValues: { batch, studentCount, billingCount },
+          newValues: { reason },
+          ipAddress: req.ip,
+        });
+      });
+
+      res.json({ message: `Batch "${batch.name}" and all associated records purged under exceptional authorization.` });
+      return;
+    }
+
+    // CASE 3: Standard permanent delete (only allowed if 0 students and 0 billing records)
+    if (studentCount > 0 || billingCount > 0) {
+      res.status(400).json({
+        error: `Cannot delete batch: ${studentCount} student(s) and ${billingCount} billing records are associated with this batch. Reassign students to another batch, archive the batch, or use Owner purge.`,
+        canReassign: true,
+        canForce: req.admin!.role === 'OWNER',
+        studentCount,
+        billingCount,
+      });
+      return;
+    }
+
+    await query('DELETE FROM batches WHERE id = $1', [batchId]);
 
     await recordAuditLog({
       adminId: req.admin!.id,
       adminName: req.admin!.fullName,
-      action: 'ARCHIVE_BATCH',
+      action: 'DELETE_BATCH',
       entityType: 'BATCH',
       entityId: batchId,
+      oldValues: batch,
       ipAddress: req.ip,
     });
 
-    res.json({ message: 'Batch archived successfully.' });
+    res.json({ message: 'Batch permanently deleted successfully.' });
   } catch (err: any) {
     console.error('[Archive/Delete Batch Error]:', err.message);
-    res.status(500).json({ error: 'Failed to archive or delete batch.' });
+    res.status(500).json({ error: err.message || 'Failed to archive or delete batch.' });
   }
 });
 
