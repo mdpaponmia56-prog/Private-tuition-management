@@ -263,17 +263,53 @@ batchRouter.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
- * DELETE /api/batches/:id - Archive batch
+ * DELETE /api/batches/:id - Archive or permanently delete batch
  */
 batchRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const batchId = parseInt(req.params.id, 10);
+    const permanent = req.query.permanent === 'true';
+
     const existing = await query('SELECT * FROM batches WHERE id = $1', [batchId]);
     if (existing.rows.length === 0) {
       res.status(404).json({ error: 'Batch not found.' });
       return;
     }
 
+    if (permanent) {
+      // Check if students exist in batch
+      const studentCountRes = await query('SELECT COUNT(*) as count FROM students WHERE batch_id = $1', [batchId]);
+      const studentCount = parseInt(studentCountRes.rows[0].count, 10);
+      if (studentCount > 0) {
+        res.status(400).json({ error: `Cannot permanently delete batch: ${studentCount} students are enrolled. Move or archive students first.` });
+        return;
+      }
+
+      // Check if billing records reference this batch
+      const billingCountRes = await query('SELECT COUNT(*) as count FROM billing_records WHERE batch_id = $1', [batchId]);
+      const billingCount = parseInt(billingCountRes.rows[0].count, 10);
+      if (billingCount > 0) {
+        res.status(400).json({ error: `Cannot permanently delete batch: ${billingCount} historical billing records reference this batch. Archive instead.` });
+        return;
+      }
+
+      await query('DELETE FROM batches WHERE id = $1', [batchId]);
+
+      await recordAuditLog({
+        adminId: req.admin!.id,
+        adminName: req.admin!.fullName,
+        action: 'DELETE_BATCH',
+        entityType: 'BATCH',
+        entityId: batchId,
+        oldValues: existing.rows[0],
+        ipAddress: req.ip,
+      });
+
+      res.json({ message: 'Batch permanently deleted successfully.' });
+      return;
+    }
+
+    // Default: Soft delete / archive
     await query('UPDATE batches SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [batchId]);
 
     await recordAuditLog({
@@ -287,8 +323,8 @@ batchRouter.delete('/:id', async (req: Request, res: Response): Promise<void> =>
 
     res.json({ message: 'Batch archived successfully.' });
   } catch (err: any) {
-    console.error('[Archive Batch Error]:', err.message);
-    res.status(500).json({ error: 'Failed to archive batch.' });
+    console.error('[Archive/Delete Batch Error]:', err.message);
+    res.status(500).json({ error: 'Failed to archive or delete batch.' });
   }
 });
 

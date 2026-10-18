@@ -12,7 +12,9 @@ import {
   Camera,
   X,
   CreditCard,
+  Trash2,
 } from 'lucide-react';
+import { DeleteStudentModal } from '../components/DeleteStudentModal.js';
 
 interface StudentsProps {
   onSelectStudent: (id: number) => void;
@@ -34,6 +36,7 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -377,6 +380,16 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
                             <Archive size={15} color="#94a3b8" />
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm btn-icon"
+                          onClick={() => setStudentToDelete(student)}
+                          title="Delete Student"
+                          style={{ color: 'var(--danger)' }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -572,6 +585,15 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
           </div>
         </div>
       )}
+
+      {/* Delete Student Modal */}
+      <DeleteStudentModal
+        student={studentToDelete}
+        onClose={() => setStudentToDelete(null)}
+        onDeleted={() => {
+          fetchStudents();
+        }}
+      />
     </div>
   );
 };

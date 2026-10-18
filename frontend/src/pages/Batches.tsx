@@ -15,6 +15,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from 'lucide-react';
 
 export const Batches: React.FC = () => {
@@ -157,6 +158,24 @@ export const Batches: React.FC = () => {
     }
   };
 
+  const handleDeleteBatch = async (b: Batch) => {
+    if (b.active_student_count && b.active_student_count > 0) {
+      alert(`Cannot delete batch "${b.name}" because it currently has ${b.active_student_count} active enrolled students. Please reassign or archive enrolled students first.`);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete batch "${b.name}" (${b.code})? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await apiFetch(`/api/batches/${b.id}?permanent=true`, { method: 'DELETE' });
+      fetchBatches();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete batch.');
+    }
+  };
+
   const toggleExpand = async (id: number) => {
     if (expandedBatchId === id) {
       setExpandedBatchId(null);
@@ -254,6 +273,17 @@ export const Batches: React.FC = () => {
                       title={batch.is_active ? 'Archive Batch' : 'Restore Batch'}
                     >
                       {batch.is_active ? <Archive size={14} /> : <RotateCcw size={14} color="var(--success)" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: 'var(--danger)' }}
+                      onClick={() => handleDeleteBatch(batch)}
+                      title="Permanently Delete Batch"
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete</span>
                     </button>
 
                     <button

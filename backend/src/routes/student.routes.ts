@@ -516,12 +516,60 @@ studentRouter.post('/:id/restore', async (req: Request, res: Response): Promise<
 });
 
 /**
+ * DELETE /api/students/:id/photo - Delete student photo
+ */
+studentRouter.delete('/:id/photo', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const studentId = parseInt(req.params.id, 10);
+    const existingRes = await query('SELECT photo_filename FROM students WHERE id = $1', [studentId]);
+    if (existingRes.rows.length === 0) {
+      res.status(404).json({ error: 'Student not found.' });
+      return;
+    }
+
+    const oldPhoto = existingRes.rows[0].photo_filename;
+    if (oldPhoto) {
+      const oldPath = path.join(config.storageDir, 'photos', oldPhoto);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch {}
+      }
+    }
+
+    await query('UPDATE students SET photo_filename = NULL, photo_mime_type = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1', [studentId]);
+
+    await recordAuditLog({
+      adminId: req.admin!.id,
+      adminName: req.admin!.fullName,
+      action: 'DELETE_STUDENT_PHOTO',
+      entityType: 'STUDENT',
+      entityId: studentId,
+      ipAddress: req.ip,
+    });
+
+    res.json({ message: 'Student photo deleted successfully.' });
+  } catch (err: any) {
+    console.error('[Delete Photo Error]:', err.message);
+    res.status(500).json({ error: 'Failed to delete photo.' });
+  }
+});
+
+/**
  * DELETE /api/students/:id - Permanent deletion check
- * A student with financial history MUST NOT be permanently deleted.
+ * Standard delete if no financial history exists.
+ * Exceptional audited purge if force=true and confirmed by OWNER.
  */
 studentRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const studentId = parseInt(req.params.id, 10);
+    const force = req.query.force === 'true' || req.body?.force === true;
+    const reason = (req.body?.reason || req.query.reason || '') as string;
+
+    const studentRes = await query('SELECT * FROM students WHERE id = $1', [studentId]);
+    if (studentRes.rows.length === 0) {
+      res.status(404).json({ error: 'Student not found.' });
+      return;
+    }
+    const student = studentRes.rows[0];
 
     const historyCheck = await query(
       `SELECT 
@@ -534,21 +582,98 @@ studentRouter.delete('/:id', async (req: Request, res: Response): Promise<void> 
     const payCount = parseInt(historyCheck.rows[0].pay_count, 10);
 
     if (billCount > 0 || payCount > 0) {
-      res.status(400).json({
-        error: `Cannot permanently delete student: ${billCount} billing records and ${payCount} payment transactions exist. Archival is required to preserve financial records.`,
+      if (!force) {
+        res.status(400).json({
+          error: `Cannot permanently delete student: ${billCount} billing records and ${payCount} payment transactions exist. Archival is required to preserve financial records. Use exceptional purge if authorized.`,
+          canForce: req.admin!.role === 'OWNER',
+          billCount,
+          payCount,
+        });
+        return;
+      }
+
+      // Exceptional purge requires OWNER role and non-empty reason
+      if (req.admin!.role !== 'OWNER') {
+        res.status(403).json({ error: 'Exceptional permanent deletion of students with financial records requires OWNER privileges.' });
+        return;
+      }
+
+      if (!reason || reason.trim().length < 5) {
+        res.status(400).json({ error: 'A valid justification (minimum 5 characters) is required for exceptional student deletion.' });
+        return;
+      }
+
+      await withTransaction(async (client) => {
+        // Delete photo from disk if present
+        if (student.photo_filename) {
+          const photoPath = path.join(config.storageDir, 'photos', student.photo_filename);
+          if (fs.existsSync(photoPath)) {
+            try { fs.unlinkSync(photoPath); } catch {}
+          }
+        }
+
+        // Delete fee adjustments for student bills
+        await client.query(
+          `DELETE FROM fee_adjustments WHERE billing_record_id IN (SELECT id FROM billing_records WHERE student_id = $1)`,
+          [studentId]
+        );
+
+        // Delete payment allocations
+        await client.query(
+          `DELETE FROM payment_allocations WHERE billing_record_id IN (SELECT id FROM billing_records WHERE student_id = $1)
+           OR payment_id IN (SELECT id FROM payment_transactions WHERE student_id = $1)`,
+          [studentId]
+        );
+
+        // Delete payments
+        await client.query('DELETE FROM payment_transactions WHERE student_id = $1', [studentId]);
+
+        // Delete billing records
+        await client.query('DELETE FROM billing_records WHERE student_id = $1', [studentId]);
+
+        // Delete enrollment history
+        await client.query('DELETE FROM enrollment_history WHERE student_id = $1', [studentId]);
+
+        // Delete student
+        await client.query('DELETE FROM students WHERE id = $1', [studentId]);
+
+        await recordAuditLog({
+          adminId: req.admin!.id,
+          adminName: req.admin!.fullName,
+          action: 'EXCEPTIONAL_PURGE_STUDENT',
+          entityType: 'STUDENT',
+          entityId: studentId,
+          oldValues: { studentCode: student.student_code, fullName: student.full_name, billCount, payCount },
+          newValues: { reason },
+          ipAddress: req.ip,
+        });
       });
+
+      res.json({ message: 'Student and related records purged under exceptional audited authorization.' });
       return;
     }
 
-    await query('DELETE FROM students WHERE id = $1', [studentId]);
+    // Standard delete (zero financial history)
+    await withTransaction(async (client) => {
+      if (student.photo_filename) {
+        const photoPath = path.join(config.storageDir, 'photos', student.photo_filename);
+        if (fs.existsSync(photoPath)) {
+          try { fs.unlinkSync(photoPath); } catch {}
+        }
+      }
 
-    await recordAuditLog({
-      adminId: req.admin!.id,
-      adminName: req.admin!.fullName,
-      action: 'DELETE_STUDENT',
-      entityType: 'STUDENT',
-      entityId: studentId,
-      ipAddress: req.ip,
+      await client.query('DELETE FROM enrollment_history WHERE student_id = $1', [studentId]);
+      await client.query('DELETE FROM students WHERE id = $1', [studentId]);
+
+      await recordAuditLog({
+        adminId: req.admin!.id,
+        adminName: req.admin!.fullName,
+        action: 'DELETE_STUDENT',
+        entityType: 'STUDENT',
+        entityId: studentId,
+        oldValues: student,
+        ipAddress: req.ip,
+      });
     });
 
     res.json({ message: 'Student deleted successfully.' });

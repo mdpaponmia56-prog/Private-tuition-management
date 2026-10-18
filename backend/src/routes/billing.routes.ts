@@ -118,3 +118,65 @@ billingRouter.post('/:id/adjust', async (req: Request, res: Response): Promise<v
     res.status(500).json({ error: err.message || 'Failed to apply fee adjustment.' });
   }
 });
+
+/**
+ * DELETE /api/billing/:id - Delete an unpaid billing obligation
+ */
+billingRouter.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const billingRecordId = parseInt(req.params.id, 10);
+
+    const billRes = await query(
+      `SELECT 
+        b.*,
+        COALESCE(
+          (
+            SELECT SUM(pa.allocated_amount)
+            FROM payment_allocations pa
+            JOIN payment_transactions pt ON pa.payment_id = pt.id
+            WHERE pa.billing_record_id = b.id AND pt.status = 'COMPLETED'
+          ), 0
+        ) as paid_amount
+       FROM billing_records b
+       WHERE b.id = $1`,
+      [billingRecordId]
+    );
+
+    if (billRes.rows.length === 0) {
+      res.status(404).json({ error: 'Billing record not found.' });
+      return;
+    }
+
+    const bill = billRes.rows[0];
+    const paid = parseFloat(bill.paid_amount || '0');
+
+    if (paid > 0) {
+      res.status(400).json({
+        error: `Cannot delete billing record with ৳${paid} allocated payments. Reverse payments first.`,
+      });
+      return;
+    }
+
+    // Delete adjustments first then billing record
+    await query('DELETE FROM fee_adjustments WHERE billing_record_id = $1', [billingRecordId]);
+    await query('DELETE FROM payment_allocations WHERE billing_record_id = $1', [billingRecordId]);
+    await query('DELETE FROM billing_records WHERE id = $1', [billingRecordId]);
+
+    const { recordAuditLog } = await import('../middleware/audit.js');
+    await recordAuditLog({
+      adminId: req.admin!.id,
+      adminName: req.admin!.fullName,
+      action: 'DELETE_BILLING_RECORD',
+      entityType: 'BILLING_RECORD',
+      entityId: billingRecordId,
+      oldValues: bill,
+      ipAddress: req.ip,
+    });
+
+    res.json({ message: 'Billing record deleted successfully.' });
+  } catch (err: any) {
+    console.error('[Delete Billing Error]:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to delete billing record.' });
+  }
+});
+

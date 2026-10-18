@@ -15,8 +15,10 @@ import {
   History,
   X,
   Gift,
+  Trash2,
 } from 'lucide-react';
 import { ReceiptModal } from '../components/ReceiptModal.js';
+import { DeleteStudentModal } from '../components/DeleteStudentModal.js';
 
 interface StudentDetailProps {
   studentId: number;
@@ -41,6 +43,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceipt | null>(null);
   const [showManualBillModal, setShowManualBillModal] = useState(false);
   const [showAdjustmentModal, setShowAdjustmentModal] = useState<number | null>(null); // billingRecordId
+  const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false);
 
   // Manual Bill Form
   const [mbYear, setMbYear] = useState(new Date().getFullYear());
@@ -139,6 +142,29 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
     }
   };
 
+  const handleDeletePhoto = async () => {
+    if (!confirm('Are you sure you want to remove the photo for this student?')) return;
+    try {
+      await apiFetch(`/api/students/${studentId}/photo`, { method: 'DELETE' });
+      fetchStudentData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete photo.');
+    }
+  };
+
+  const handleDeleteBill = async (bill: BillingRecord) => {
+    const monthName = monthNames[bill.billingMonth - 1];
+    if (!confirm(`Are you sure you want to delete the unpaid tuition fee bill for ${monthName} ${bill.billingYear} (${formatBDT(bill.netFee, language)})?`)) {
+      return;
+    }
+    try {
+      await apiFetch(`/api/billing/${bill.id}`, { method: 'DELETE' });
+      fetchStudentData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete billing record.');
+    }
+  };
+
   if (loading || !student) {
     return (
       <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
@@ -179,32 +205,46 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             {/* Student Photo */}
-            <div style={{
-              width: 72,
-              height: 72,
-              borderRadius: 'var(--radius-lg)',
-              background: '#f1f5f9',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '1.75rem',
-              color: 'var(--primary)',
-              border: '2px solid var(--border-color)',
-              flexShrink: 0,
-            }}>
-              {student.photo_filename ? (
-                <img
-                  src={`/api/students/${student.id}/photo`}
-                  alt={student.full_name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e: any) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                student.full_name.charAt(0).toUpperCase()
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <div style={{
+                width: 72,
+                height: 72,
+                borderRadius: 'var(--radius-lg)',
+                background: '#f1f5f9',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '1.75rem',
+                color: 'var(--primary)',
+                border: '2px solid var(--border-color)',
+                flexShrink: 0,
+              }}>
+                {student.photo_filename ? (
+                  <img
+                    src={`/api/students/${student.id}/photo`}
+                    alt={student.full_name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e: any) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  student.full_name.charAt(0).toUpperCase()
+                )}
+              </div>
+              {student.photo_filename && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.68rem', padding: '2px 6px', color: 'var(--danger)', height: 22 }}
+                  onClick={handleDeletePhoto}
+                  title="Delete student photo"
+                >
+                  <Trash2 size={11} />
+                  <span>Remove</span>
+                </button>
               )}
             </div>
 
@@ -258,6 +298,17 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
             >
               <CreditCard size={18} />
               <span>Collect Fee</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+              onClick={() => setShowDeleteStudentModal(true)}
+              title="Delete Student Profile"
+            >
+              <Trash2 size={16} />
+              <span>Delete Student</span>
             </button>
           </div>
         </div>
@@ -359,21 +410,35 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
                       <td>{bill.dueDate}</td>
                       <td>{getStatusBadge(bill.status)}</td>
                       <td>
-                        {bill.balance > 0 && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => {
-                              setShowAdjustmentModal(bill.id);
-                              setAdjAmount('');
-                              setAdjReason('');
-                            }}
-                            title="Add Waiver or Scholarship"
-                          >
-                            <Gift size={13} />
-                            <span>Waiver</span>
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {bill.balance > 0 && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => {
+                                setShowAdjustmentModal(bill.id);
+                                setAdjAmount('');
+                                setAdjReason('');
+                              }}
+                              title="Add Waiver or Scholarship"
+                            >
+                              <Gift size={13} />
+                              <span>Waiver</span>
+                            </button>
+                          )}
+                          {bill.paidAmount === 0 && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ color: 'var(--danger)' }}
+                              onClick={() => handleDeleteBill(bill)}
+                              title="Delete Unpaid Fee Record"
+                            >
+                              <Trash2 size={13} />
+                              <span>Delete</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -717,6 +782,15 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
           onClose={() => setSelectedReceipt(null)}
         />
       )}
+
+      {/* Delete Student Modal */}
+      <DeleteStudentModal
+        student={showDeleteStudentModal ? student : null}
+        onClose={() => setShowDeleteStudentModal(false)}
+        onDeleted={() => {
+          onBack();
+        }}
+      />
     </div>
   );
 };
