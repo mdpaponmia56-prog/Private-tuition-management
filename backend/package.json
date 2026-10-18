@@ -11,7 +11,7 @@
     "dev": "tsx watch src/app.ts",
     "db:migrate": "tsx src/db/migrate.ts",
     "provision:admins": "tsx src/db/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run --fileParallelism=false"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

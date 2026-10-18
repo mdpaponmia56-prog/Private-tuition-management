@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { BillingService } from '../services/billing.service.js';
+import { query } from '../db/index.js';
 
 export const billingRouter = Router();
 
@@ -82,7 +83,7 @@ billingRouter.post('/manual', async (req: Request, res: Response): Promise<void>
       ipAddress: req.ip,
     });
 
-    res.status(201).json({ message: 'Manual billing obligation created successfully.', record });
+    res.status(201).json({ message: 'Manual billing obligation created successfully.', record, billingRecord: record });
   } catch (err: any) {
     console.error('[Manual Bill Error]:', err.message);
     res.status(500).json({ error: err.message || 'Failed to create manual bill.' });
@@ -90,9 +91,9 @@ billingRouter.post('/manual', async (req: Request, res: Response): Promise<void>
 });
 
 /**
- * POST /api/billing/:id/adjust - Add fee adjustment / waiver / scholarship
+ * POST /api/billing/:id/adjust & /:id/adjustment - Add fee adjustment / waiver / scholarship
  */
-billingRouter.post('/:id/adjust', async (req: Request, res: Response): Promise<void> => {
+billingRouter.post(['/:id/adjust', '/:id/adjustment'], async (req: Request, res: Response): Promise<void> => {
   try {
     const billingRecordId = parseInt(req.params.id, 10);
     const { adjustmentType, amount, reason } = req.body;

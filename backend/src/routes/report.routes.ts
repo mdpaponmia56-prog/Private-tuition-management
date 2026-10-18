@@ -99,9 +99,9 @@ reportRouter.get('/monthly', async (req: Request, res: Response): Promise<void> 
 });
 
 /**
- * GET /api/reports/export/collections.csv - Export payment transactions to CSV
+ * GET /api/reports/export/collections.csv & /api/reports/collections/csv - Export payment transactions to CSV
  */
-reportRouter.get('/export/collections.csv', async (req: Request, res: Response): Promise<void> => {
+reportRouter.get(['/export/collections.csv', '/collections/csv'], async (req: Request, res: Response): Promise<void> => {
   try {
     const { startDate, endDate, batchId } = req.query;
 

@@ -22,6 +22,11 @@ export function errorHandler(
     return;
   }
 
+  if (err.message && (err.message.includes('Only JPEG, PNG') || err.message.includes('Invalid image format'))) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   // Check for postgres unique constraint errors
   if (err.code === '23505') {
     res.status(409).json({ error: 'A record with this identifier already exists.' });

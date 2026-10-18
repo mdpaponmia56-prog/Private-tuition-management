@@ -75,6 +75,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/audit', auditRouter);
+app.use('/api/audit-logs', auditRouter);
 
 // Fallback for non-existent API routes
 app.use('/api/*', (_req, res) => {

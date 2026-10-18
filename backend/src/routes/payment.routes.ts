@@ -55,7 +55,7 @@ paymentRouter.post('/', async (req: Request, res: Response): Promise<void> => {
       ipAddress: req.ip,
     });
 
-    res.status(201).json({ message: 'Payment recorded successfully.', receipt });
+    res.status(201).json({ message: 'Payment recorded successfully.', receipt, payment: receipt });
   } catch (err: any) {
     console.error('[Record Payment Error]:', err.message);
     res.status(500).json({ error: err.message || 'Failed to record payment.' });
