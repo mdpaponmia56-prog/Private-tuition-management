@@ -13,7 +13,11 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-export const Settings: React.FC = () => {
+interface SettingsProps {
+  onOpenAdminPanel?: () => void;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ onOpenAdminPanel }) => {
   const { admin } = useAuth();
   const { t } = useLanguage();
 
@@ -189,18 +193,32 @@ export const Settings: React.FC = () => {
           </form>
         </div>
 
-        {/* 3 Pre-Provisioned Administrator Identities */}
+        {/* Administrator Accounts & Access */}
         <div className="card">
           <div className="card-header">
             <div className="card-title">
               <Shield size={20} color="var(--primary)" />
               <span>{t.preProvisionedAdmins}</span>
             </div>
-            <span className="badge badge-active">Enforced Invariant: 3/3</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="badge" style={{ background: '#ecfdf5', color: '#065f46' }}>
+                {administrators.length} / 3 Slots Active
+              </span>
+              {onOpenAdminPanel && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                  onClick={onOpenAdminPanel}
+                >
+                  Manage Admins
+                </button>
+              )}
+            </div>
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-            {t.securityNotice}
+            {t.securityNotice} (Up to 3 administrators permitted. Additional slots can be added or removed in the Admin Panel).
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -230,7 +248,7 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3', marginBottom: 4 }}>
+                  <span className="badge" style={{ background: adm.role === 'OWNER' ? '#e0e7ff' : '#dcfce7', color: adm.role === 'OWNER' ? '#3730a3' : '#166534', marginBottom: 4 }}>
                     {adm.role}
                   </span>
                   <div>
@@ -239,6 +257,31 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {administrators.length < 3 && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px dashed #cbd5e1',
+                  background: '#f8fafc',
+                  textAlign: 'center',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                {3 - administrators.length} administrator slot(s) currently open and available.{' '}
+                {onOpenAdminPanel && (
+                  <button
+                    type="button"
+                    onClick={onOpenAdminPanel}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  >
+                    Open Admin Panel to add.
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

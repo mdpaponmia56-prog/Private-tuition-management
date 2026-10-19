@@ -3,78 +3,56 @@ import { pool, query, withTransaction } from './index.js';
 import { config } from '../config/index.js';
 
 export async function provisionAdministrators() {
-  console.log('[Provisioning] Initializing administrator accounts...');
+  console.log('[Provisioning] Initializing primary owner account...');
 
-  const adminsToProvision = [
-    {
-      id: 1,
-      email: config.admin1.email.toLowerCase().trim(),
-      fullName: config.admin1.name.trim(),
-      role: config.admin1.role,
-      password: config.admin1.password,
-    },
-    {
-      id: 2,
-      email: config.admin2.email.toLowerCase().trim(),
-      fullName: config.admin2.name.trim(),
-      role: config.admin2.role,
-      password: config.admin2.password,
-    },
-    {
-      id: 3,
-      email: config.admin3.email.toLowerCase().trim(),
-      fullName: config.admin3.name.trim(),
-      role: config.admin3.role,
-      password: config.admin3.password,
-    },
-  ];
+  const primaryOwner = {
+    id: 1,
+    email: config.admin1.email.toLowerCase().trim(),
+    fullName: config.admin1.name.trim(),
+    role: config.admin1.role,
+    password: config.admin1.password,
+  };
 
   await withTransaction(async (client) => {
-    // Check existing count
-    const existingCountRes = await client.query('SELECT COUNT(*) as count FROM administrators');
-    const existingCount = parseInt(existingCountRes.rows[0].count, 10);
-    console.log(`[Provisioning] Current administrators in system: ${existingCount}/3`);
+    // Check if primary owner already exists
+    const existing = await client.query(
+      'SELECT id, email, role FROM administrators WHERE email = $1 OR id = $2',
+      [primaryOwner.email, primaryOwner.id]
+    );
 
-    for (const admin of adminsToProvision) {
-      // Check if this specific email or ID already exists
-      const existing = await client.query(
-        'SELECT id, email, role FROM administrators WHERE email = $1 OR id = $2',
-        [admin.email, admin.id]
-      );
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(primaryOwner.password, saltRounds);
 
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(admin.password, saltRounds);
-
-      if (existing.rows.length === 0) {
-        // Enforce the invariant: never insert more than 3
-        const countRes = await client.query('SELECT COUNT(*) as count FROM administrators');
-        if (parseInt(countRes.rows[0].count, 10) >= 3) {
-          throw new Error('Cannot provision: Limit of exactly 3 administrators has already been reached.');
-        }
-
-        await client.query(
-          `INSERT INTO administrators (id, email, full_name, role, password_hash, is_active)
-           VALUES ($1, $2, $3, $4, $5, true)`,
-          [admin.id, admin.email, admin.fullName, admin.role, passwordHash]
-        );
-        console.log(`[Provisioning] Created Administrator ${admin.id}: ${admin.email} (${admin.role})`);
-      } else {
-        // Update details safely without creating duplicate
-        await client.query(
-          `UPDATE administrators 
-           SET email = $1, full_name = $2, role = $3, is_active = true, updated_at = CURRENT_TIMESTAMP
-           WHERE id = $4`,
-          [admin.email, admin.fullName, admin.role, admin.id]
-        );
-        console.log(`[Provisioning] Verified/Updated Administrator ${admin.id}: ${admin.email} (${admin.role})`);
+    if (existing.rows.length === 0) {
+      // Check current count
+      const countRes = await client.query('SELECT COUNT(*) as count FROM administrators');
+      if (parseInt(countRes.rows[0].count, 10) >= 3) {
+        throw new Error('Cannot provision: Limit of 3 administrators has already been reached.');
       }
+
+      await client.query(
+        `INSERT INTO administrators (id, email, full_name, role, password_hash, is_active)
+         VALUES ($1, $2, $3, $4, $5, true)`,
+        [primaryOwner.id, primaryOwner.email, primaryOwner.fullName, primaryOwner.role, passwordHash]
+      );
+      console.log(`[Provisioning] Created Primary Administrator: ${primaryOwner.email} (${primaryOwner.role})`);
+    } else {
+      // Ensure primary owner retains OWNER role
+      await client.query(
+        `UPDATE administrators 
+         SET email = $1, full_name = $2, role = 'OWNER', is_active = true, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [primaryOwner.email, primaryOwner.fullName, existing.rows[0].id]
+      );
+      console.log(`[Provisioning] Verified Primary Administrator: ${primaryOwner.email} (OWNER)`);
     }
 
     // Reset sequence if needed
     await client.query(`SELECT setval(pg_get_serial_sequence('administrators', 'id'), coalesce(max(id), 1)) FROM administrators`);
   });
 
-  console.log('[Provisioning] Exactly three administrator accounts successfully verified and configured.');
+  const countRes = await query('SELECT COUNT(*) as count FROM administrators');
+  console.log(`[Provisioning] Primary administrator active. Current administrators: ${countRes.rows[0].count}/3`);
 }
 
 // Seed sample batches if none exist

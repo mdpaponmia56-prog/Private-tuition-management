@@ -9,6 +9,7 @@ import {
   History,
   BarChart3,
   Settings,
+  ShieldCheck,
   FileText,
   X,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ export type TabType =
   | 'payments' 
   | 'reports' 
   | 'settings' 
+  | 'admins'
   | 'audit';
 
 interface SidebarProps {
@@ -43,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpe
     { id: 'payments', label: t.paymentHistory, icon: History },
     { id: 'reports', label: t.reports, icon: BarChart3 },
     { id: 'settings', label: t.settings, icon: Settings },
+    { id: 'admins', label: t.adminPanel || 'Admin Panel', icon: ShieldCheck },
     { id: 'audit', label: t.auditLogs, icon: FileText },
   ];
 

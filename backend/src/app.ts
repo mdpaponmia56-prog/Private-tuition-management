@@ -17,6 +17,7 @@ import { dashboardRouter } from './routes/dashboard.routes.js';
 import { reportRouter } from './routes/report.routes.js';
 import { settingsRouter } from './routes/settings.routes.js';
 import { auditRouter } from './routes/audit.routes.js';
+import { adminRouter } from './routes/admin.routes.js';
 
 export const app = express();
 
@@ -74,6 +75,8 @@ app.use('/api/dues', dueRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/admins', adminRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/audit-logs', auditRouter);
 

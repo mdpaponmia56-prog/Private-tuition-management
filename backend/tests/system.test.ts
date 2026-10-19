@@ -30,7 +30,17 @@ describe('Private Tuition Management System - Full Automated Test Suite', () => 
     expect(ownerLogin.body.token).toBeDefined();
     ownerToken = ownerLogin.body.token;
 
-    // Authenticate Admin 2
+    // Create and Authenticate Admin 2 (Coordinator) via the Owner API
+    await request(app)
+      .post('/api/admins')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        fullName: 'Academic Coordinator',
+        email: 'admin2.coordinator@tuition.bd',
+        role: 'ADMINISTRATOR_2',
+        password: 'Coord2026@Bangladesh!',
+      });
+
     const admin2Login = await request(app)
       .post('/api/auth/login')
       .send({
@@ -54,6 +64,8 @@ describe('Private Tuition Management System - Full Automated Test Suite', () => 
     if (testBatchId) {
       await query('DELETE FROM batches WHERE id = $1', [testBatchId]);
     }
+    // Clean up created non-owner test admins so database remains clean with only Owner
+    await query("DELETE FROM administrators WHERE role != 'OWNER'");
   });
 
   // ==========================================
@@ -75,6 +87,19 @@ describe('Private Tuition Management System - Full Automated Test Suite', () => 
     });
 
     it('should enforce exactly 3 administrator accounts - prevent 4th administrator creation at database level', async () => {
+      // Ensure 3 admins exist to test the trigger boundary
+      const currentCountRes = await query('SELECT COUNT(*) as count FROM administrators');
+      const count = parseInt(currentCountRes.rows[0].count, 10);
+      const tempEmails: string[] = [];
+      for (let i = count + 1; i <= 3; i++) {
+        const email = `temp.admin.${i}.${Date.now()}@tuition.bd`;
+        tempEmails.push(email);
+        await query(`
+          INSERT INTO administrators (email, full_name, role, password_hash, is_active)
+          VALUES ('${email}', 'Temp Admin ${i}', 'ADMINISTRATOR_${i}', 'hash', true)
+        `);
+      }
+
       try {
         await query(`
           INSERT INTO administrators (email, full_name, role, password_hash, is_active)
@@ -84,6 +109,10 @@ describe('Private Tuition Management System - Full Automated Test Suite', () => 
         expect(true).toBe(false);
       } catch (err: any) {
         expect(err.message).toMatch(/Maximum of exactly three administrator accounts permitted/i);
+      } finally {
+        for (const e of tempEmails) {
+          await query('DELETE FROM administrators WHERE email = $1', [e]);
+        }
       }
     });
 

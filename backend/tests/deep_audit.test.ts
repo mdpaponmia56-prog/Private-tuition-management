@@ -27,7 +27,17 @@ describe('Deep Project Audit & Real-World Functional Verification', () => {
     expect(ownerRes.status).toBe(200);
     ownerToken = ownerRes.body.token;
 
-    // Authenticate Admin 2 (Coordinator)
+    // Create and Authenticate Admin 2 (Coordinator) via the Owner API
+    await request(app)
+      .post('/api/admins')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        fullName: 'Academic Coordinator',
+        email: 'admin2.coordinator@tuition.bd',
+        role: 'ADMINISTRATOR_2',
+        password: 'Coord2026@Bangladesh!',
+      });
+
     const admin2Res = await request(app)
       .post('/api/auth/login')
       .send({
@@ -37,7 +47,17 @@ describe('Deep Project Audit & Real-World Functional Verification', () => {
     expect(admin2Res.status).toBe(200);
     admin2Token = admin2Res.body.token;
 
-    // Authenticate Admin 3 (Assistant)
+    // Create and Authenticate Admin 3 (Assistant) via the Owner API
+    await request(app)
+      .post('/api/admins')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        fullName: 'Accounts Assistant',
+        email: 'admin3.assistant@tuition.bd',
+        role: 'ADMINISTRATOR_3',
+        password: 'Assist2026@Bangladesh!',
+      });
+
     const admin3Res = await request(app)
       .post('/api/auth/login')
       .send({
@@ -61,6 +81,8 @@ describe('Deep Project Audit & Real-World Functional Verification', () => {
     for (const batchId of createdBatchIds) {
       await query('DELETE FROM batches WHERE id = $1', [batchId]);
     }
+    // Clean up created non-owner test admins so database remains clean with only Owner
+    await query("DELETE FROM administrators WHERE role != 'OWNER'");
   });
 
   // =========================================================================

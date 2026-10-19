@@ -13,12 +13,27 @@ import { DueManagement } from './pages/DueManagement.js';
 import { PaymentHistory } from './pages/PaymentHistory.js';
 import { Reports } from './pages/Reports.js';
 import { Settings } from './pages/Settings.js';
+import { AdminPanel } from './pages/AdminPanel.js';
 import { AuditLogs } from './pages/AuditLogs.js';
 import { Student } from './types/index.js';
 
+const getInitialTab = (): TabType => {
+  const path = window.location.pathname.toLowerCase();
+  if (path === '/admin' || path === '/admins') return 'admins';
+  if (path === '/settings') return 'settings';
+  if (path === '/students') return 'students';
+  if (path === '/batches') return 'batches';
+  if (path === '/dues') return 'dues';
+  if (path === '/fee-collection') return 'fee-collection';
+  if (path === '/payments') return 'payments';
+  if (path === '/reports') return 'reports';
+  if (path === '/audit' || path === '/audit-logs') return 'audit';
+  return 'dashboard';
+};
+
 export const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
+  const [currentTab, setCurrentTab] = useState<TabType>(getInitialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Cross-page navigation context
@@ -27,6 +42,15 @@ export const App: React.FC = () => {
 
   // Institution profile info for headers
   const [institutionName, setInstitutionName] = useState<string>('');
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentTab(getInitialTab());
+      setSelectedStudentId(null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -85,6 +109,10 @@ export const App: React.FC = () => {
   const navigateToTab = (tab: TabType) => {
     setCurrentTab(tab);
     setSelectedStudentId(null);
+    const newPath = tab === 'dashboard' ? '/' : '/' + (tab === 'admins' ? 'admin' : tab);
+    if (window.location.pathname !== newPath) {
+      window.history.pushState(null, '', newPath);
+    }
   };
 
   const handleOpenStudentDetail = (id: number) => {
@@ -146,7 +174,9 @@ export const App: React.FC = () => {
 
               {currentTab === 'reports' && <Reports />}
 
-              {currentTab === 'settings' && <Settings />}
+              {currentTab === 'settings' && <Settings onOpenAdminPanel={() => navigateToTab('admins')} />}
+
+              {currentTab === 'admins' && <AdminPanel />}
 
               {currentTab === 'audit' && <AuditLogs />}
             </>
