@@ -4,6 +4,8 @@ import { formatBDT } from '../utils/i18n.js';
 import { useLanguage } from '../contexts/LanguageContext.js';
 import { Printer, X, CheckCircle, AlertTriangle } from 'lucide-react';
 
+import { apiFetch } from '../utils/api.js';
+
 interface ReceiptModalProps {
   receipt: PaymentReceipt;
   onClose: () => void;
@@ -15,11 +17,26 @@ interface ReceiptModalProps {
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   receipt,
   onClose,
-  institutionName = 'Tuition Care (Dhaka)',
-  institutionContact = '+8801700000000',
-  institutionAddress = 'Dhanmondi, Dhaka, Bangladesh',
+  institutionName: initialName = 'Tuition Care',
+  institutionContact: initialContact = '01911735403',
+  institutionAddress: initialAddress = 'Gazipur, Dhaka, Bangladesh',
 }) => {
   const { language, t } = useLanguage();
+  const [instName, setInstName] = React.useState(initialName);
+  const [instAddress, setInstAddress] = React.useState(initialAddress);
+  const [instContact, setInstContact] = React.useState(initialContact);
+
+  React.useEffect(() => {
+    apiFetch('/api/settings')
+      .then((res) => {
+        if (res?.settings) {
+          if (res.settings.institution_name) setInstName(res.settings.institution_name);
+          if (res.settings.institution_address) setInstAddress(res.settings.institution_address);
+          if (res.settings.institution_contact) setInstContact(res.settings.institution_contact);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -70,9 +87,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             {/* Institution Header */}
             <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: 12, marginBottom: 16 }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>{institutionName}</h2>
-              <p style={{ fontSize: '0.82rem', color: '#64748b' }}>{institutionAddress}</p>
-              <p style={{ fontSize: '0.82rem', color: '#64748b' }}>Official Contact / Helpline: {institutionContact}</p>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>{instName}</h2>
+              <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 2px 0', fontWeight: 500 }}>{instAddress}</p>
+              <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 6px 0', fontWeight: 600 }}>Official Contact / Helpline: {instContact}</p>
               <div style={{
                 display: 'inline-block',
                 marginTop: 6,

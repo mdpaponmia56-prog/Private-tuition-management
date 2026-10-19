@@ -167,4 +167,5 @@ export interface DashboardData {
   recentPayments: any[];
   recentAdmissions: any[];
   followUpAlerts: any[];
+  urgentFollowUps?: any[];
 }

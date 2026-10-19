@@ -137,7 +137,7 @@ describe('Private Tuition Management System - Full Automated Test Suite', () => 
       const res = await request(app)
         .put('/api/settings')
         .set('Authorization', `Bearer ${ownerToken}`)
-        .send({ settings: { institution_name: 'Antigravity Tuition Academy (Dhaka)' } });
+        .send({ settings: { institution_name: 'Tuition Care' } });
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/Settings updated successfully/i);
     });

@@ -25,7 +25,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { language, t } = useLanguage();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('Just now');
   const [error, setError] = useState('');
+
+  // Batches for filtering
+  const [batches, setBatches] = useState<Array<{ id: number; name: string }>>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<number | ''>('');
 
   // Selected period
   const currentDate = new Date();
@@ -36,22 +42,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceipt | null>(null);
   const [selectedReminderStudentId, setSelectedReminderStudentId] = useState<number | null>(null);
 
-  const fetchDashboard = async () => {
-    setLoading(true);
+  // Load batches list for filter
+  useEffect(() => {
+    apiFetch<{ batches: Array<{ id: number; name: string }> }>('/api/batches')
+      .then((res) => setBatches(res.batches || []))
+      .catch(() => {});
+  }, []);
+
+  const fetchDashboard = async (showFullLoader = true) => {
+    if (showFullLoader && !data) setLoading(true);
+    setIsRefreshing(true);
     setError('');
     try {
-      const res = await apiFetch<DashboardData>(`/api/dashboard?year=${selectedYear}&month=${selectedMonth}`);
+      let url = `/api/dashboard?year=${selectedYear}&month=${selectedMonth}`;
+      if (selectedBatchId) {
+        url += `&batchId=${selectedBatchId}`;
+      }
+      const res = await apiFetch<DashboardData>(url);
       setData(res);
+      setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard.');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboard();
-  }, [selectedMonth, selectedYear]);
+    fetchDashboard(true);
+  }, [selectedMonth, selectedYear, selectedBatchId]);
+
+  // Real-time automatic sync when tab or window regains focus
+  useEffect(() => {
+    const onFocus = () => {
+      fetchDashboard(false);
+    };
+    window.addEventListener('focus', onFocus);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchDashboard(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [selectedMonth, selectedYear, selectedBatchId]);
 
   const viewReceipt = async (paymentId: number) => {
     try {
@@ -71,19 +110,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       {/* Header & Filter Controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-            {t.dashboard}
-          </h1>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            Financial overview and real-time tuition performance
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
+              {t.dashboard}
+            </h1>
+            <span
+              className="badge badge-active"
+              style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: 4 }}
+              title="Real-time data synced with PostgreSQL"
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              Real-time ({lastUpdated})
+            </span>
+          </div>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginTop: 4 }}>
+            Financial overview, cash collections, and tuition performance
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Batch selector */}
+          <select
+            className="form-control"
+            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
+            value={selectedBatchId}
+            onChange={(e) => setSelectedBatchId(e.target.value ? parseInt(e.target.value, 10) : '')}
+          >
+            <option value="">All Batches (সব ব্যাচ)</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+
           {/* Month selector */}
           <select
             className="form-control"
-            style={{ width: 'auto', fontWeight: 600 }}
+            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
           >
@@ -97,7 +161,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Year selector */}
           <select
             className="form-control"
-            style={{ width: 'auto', fontWeight: 600 }}
+            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
           >
@@ -108,8 +172,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             ))}
           </select>
 
-          <button type="button" className="btn btn-secondary btn-icon" onClick={fetchDashboard} title="Refresh Dashboard">
-            <RefreshCw size={16} />
+          <button
+            type="button"
+            className="btn btn-secondary btn-icon"
+            onClick={() => fetchDashboard(false)}
+            title="Refresh Live Data"
+          >
+            <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
           </button>
         </div>
       </div>
@@ -360,16 +429,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.recentPayments.length > 0 ? (
-                      data.recentPayments.map((p) => (
+                    {(data.recentPayments || []).length > 0 ? (
+                      (data.recentPayments || []).map((p: any) => (
                         <tr key={p.id}>
                           <td>
-                            <div style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.receipt_number}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-light)' }}>{p.payment_date}</div>
+                            <div style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.receipt_number || p.receiptNumber}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-light)' }}>{p.payment_date || p.paymentDate}</div>
                           </td>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{p.student_name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.batch_name}</div>
+                            <div style={{ fontWeight: 600 }}>{p.student_name || p.studentName}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.batch_name || p.batchName}</div>
                           </td>
                           <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
                             {formatBDT(p.amount, language)}
@@ -421,22 +490,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.followUpAlerts.length > 0 ? (
-                      data.followUpAlerts.map((s) => (
-                        <tr key={s.student_id}>
+                    {(data.followUpAlerts || data.urgentFollowUps || []).length > 0 ? (
+                      (data.followUpAlerts || data.urgentFollowUps || []).map((s: any) => (
+                        <tr key={s.student_id || s.studentId}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{s.full_name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{s.batch_name}</div>
+                            <div style={{ fontWeight: 600 }}>{s.full_name || s.fullName}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{s.batch_name || s.batchName}</div>
                           </td>
-                          <td style={{ fontFamily: 'monospace' }}>{s.guardian_phone}</td>
+                          <td style={{ fontFamily: 'monospace' }}>{s.guardian_phone || s.guardianPhone}</td>
                           <td style={{ fontWeight: 700, color: 'var(--danger)' }}>
-                            {formatBDT(s.total_due, language)}
+                            {formatBDT(s.total_due || s.totalDue, language)}
                           </td>
                           <td>
                             <button
                               type="button"
                               className="btn btn-danger btn-sm"
-                              onClick={() => setSelectedReminderStudentId(s.student_id)}
+                              onClick={() => setSelectedReminderStudentId(s.student_id || s.studentId)}
                               title="Send Reminder"
                             >
                               <MessageSquare size={14} />

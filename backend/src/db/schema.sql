@@ -215,9 +215,9 @@ CREATE TABLE IF NOT EXISTS application_settings (
 -- Default system settings
 INSERT INTO application_settings (key, value, description)
 VALUES 
-    ('institution_name', 'Private Tuition Care (Dhaka)', 'Display name of the tutor or coaching center'),
-    ('institution_contact', '+8801700000000', 'Official contact phone number'),
-    ('institution_address', 'Dhanmondi, Dhaka-1209, Bangladesh', 'Address displayed on invoices and receipts'),
+    ('institution_name', 'Tuition Care', 'Display name of the tutor or coaching center'),
+    ('institution_contact', '01911735403', 'Official contact phone number'),
+    ('institution_address', 'Gazipur, Dhaka, Bangladesh', 'Address displayed on invoices and receipts'),
     ('default_currency', 'BDT', 'Currency code'),
     ('currency_symbol', '৳', 'Currency symbol'),
     ('default_timezone', 'Asia/Dhaka', 'Standard application timezone'),
