@@ -21,9 +21,13 @@ import { adminRouter } from './routes/admin.routes.js';
 
 export const app = express();
 
+const helmetFn: any = (helmet as any)?.default || helmet;
+const corsFn: any = (cors as any)?.default || cors;
+const cookieParserFn: any = (cookieParser as any)?.default || cookieParser;
+
 // Security HTTP headers
 app.use(
-  helmet({
+  helmetFn({
     contentSecurityPolicy: false, // Managed per deployment
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
@@ -31,15 +35,15 @@ app.use(
 
 // CORS configuration
 app.use(
-  cors({
-    origin: (origin, callback) => {
+  corsFn({
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Allow requests with no origin (like mobile apps, curl, or same-origin)
       if (!origin) return callback(null, true);
       // Allow localhost on any port for local development
       if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
         return callback(null, true);
       }
-      if (origin === config.clientUrl) {
+      if (origin === config.clientUrl || origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
       callback(new Error('Not allowed by CORS'));
@@ -50,7 +54,7 @@ app.use(
   })
 );
 
-app.use(cookieParser(config.sessionSecret));
+app.use(cookieParserFn(config.sessionSecret));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
