@@ -59,6 +59,15 @@ app.use(cookieParserFn(config.sessionSecret));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
+// Instant Ping Endpoint (zero DB overhead, immediate proof of liveness)
+app.get(['/api/ping', '/ping'], (_req, res) => {
+  res.status(200).json({
+    status: 'PONG',
+    service: 'tuition-management-api',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health Check Endpoint (safe, unprivileged)
 app.get(['/api/health', '/health'], async (_req, res) => {
   const isDbHealthy = await testConnection();

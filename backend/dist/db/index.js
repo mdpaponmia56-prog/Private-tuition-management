@@ -43,7 +43,9 @@ export async function testConnection() {
         return false;
     }
     try {
-        const res = await pool.query('SELECT NOW() as current_time, current_database() as db_name');
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Database ping timeout after 3500ms')), 3500));
+        const queryPromise = pool.query('SELECT NOW() as current_time, current_database() as db_name');
+        const res = await Promise.race([queryPromise, timeoutPromise]);
         console.log(`[DB Connected] DB: ${res.rows[0].db_name} at ${res.rows[0].current_time}`);
         return true;
     }
