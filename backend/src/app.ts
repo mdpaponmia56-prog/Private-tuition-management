@@ -60,7 +60,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 // Health Check Endpoint (safe, unprivileged)
-app.get('/api/health', async (_req, res) => {
+app.get(['/api/health', '/health'], async (_req, res) => {
   const isDbHealthy = await testConnection();
   res.status(isDbHealthy ? 200 : 503).json({
     status: isDbHealthy ? 'HEALTHY' : 'UNHEALTHY',
@@ -70,43 +70,45 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
-// Protected & Core API Routes
-app.use('/api/auth', authRouter);
-app.use('/api/batches', batchRouter);
-app.use('/api/students', studentRouter);
-app.use('/api/billing', billingRouter);
-app.use('/api/payments', paymentRouter);
-app.use('/api/dues', dueRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/reports', reportRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/admins', adminRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/audit', auditRouter);
-app.use('/api/audit-logs', auditRouter);
+// Protected & Core API Routes (support both with and without /api prefix)
+app.use(['/api/auth', '/auth'], authRouter);
+app.use(['/api/batches', '/batches'], batchRouter);
+app.use(['/api/students', '/students'], studentRouter);
+app.use(['/api/billing', '/billing'], billingRouter);
+app.use(['/api/payments', '/payments'], paymentRouter);
+app.use(['/api/dues', '/dues'], dueRouter);
+app.use(['/api/dashboard', '/dashboard'], dashboardRouter);
+app.use(['/api/reports', '/reports'], reportRouter);
+app.use(['/api/settings', '/settings'], settingsRouter);
+app.use(['/api/admins', '/admins'], adminRouter);
+app.use(['/api/admin', '/admin'], adminRouter);
+app.use(['/api/audit', '/audit'], auditRouter);
+app.use(['/api/audit-logs', '/audit-logs'], auditRouter);
 
 import fs from 'fs';
 import path from 'path';
 
-// Serve frontend SPA static files if present
-const possibleDistPaths = [
-  path.resolve(process.cwd(), '../frontend/dist'),
-  path.resolve(process.cwd(), 'frontend/dist'),
-];
+// Serve frontend SPA static files if present (only when running as standalone local monolith, not on Vercel)
+if (!process.env.VERCEL) {
+  const possibleDistPaths = [
+    path.resolve(process.cwd(), '../frontend/dist'),
+    path.resolve(process.cwd(), 'frontend/dist'),
+  ];
 
-for (const p of possibleDistPaths) {
-  if (fs.existsSync(path.join(p, 'index.html'))) {
-    app.use(express.static(p));
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api')) return next();
-      res.sendFile(path.join(p, 'index.html'));
-    });
-    break;
+  for (const p of possibleDistPaths) {
+    if (fs.existsSync(path.join(p, 'index.html'))) {
+      app.use(express.static(p));
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path === '/health') return next();
+        res.sendFile(path.join(p, 'index.html'));
+      });
+      break;
+    }
   }
 }
 
 // Fallback for non-existent API routes
-app.use('/api/*', (_req, res) => {
+app.use(['/api/*', '/*'], (_req, res) => {
   res.status(404).json({ error: 'Endpoint not found.' });
 });
 
