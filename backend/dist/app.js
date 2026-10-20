@@ -18,6 +18,7 @@ import { settingsRouter } from './routes/settings.routes.js';
 import { auditRouter } from './routes/audit.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
 export const app = express();
+app.set('trust proxy', 1);
 const helmetFn = helmet?.default || helmet;
 const corsFn = cors?.default || cors;
 const cookieParserFn = cookieParser?.default || cookieParser;

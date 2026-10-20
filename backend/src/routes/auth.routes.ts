@@ -16,6 +16,7 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts from this IP. Please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 authRouter.post('/login', loginLimiter, async (req: Request, res: Response): Promise<void> => {

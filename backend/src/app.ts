@@ -20,6 +20,7 @@ import { auditRouter } from './routes/audit.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
 
 export const app = express();
+app.set('trust proxy', 1);
 
 const helmetFn: any = (helmet as any)?.default || helmet;
 const corsFn: any = (cors as any)?.default || cors;
