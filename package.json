@@ -9,14 +9,14 @@
     "frontend"
   ],
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build:backend": "cd backend && npm run build && npx esbuild src/app.ts --bundle --platform=node --target=node20 --format=esm --outfile=../api/index.js --external:pg-native",
+    "build:backend": "cd backend && npm run build && npx esbuild src/app.ts --bundle --platform=node --target=node24 --format=esm --outfile=../api/index.js --external:pg-native",
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:backend && npm run build:frontend",
     "start": "cd backend && npm start",
