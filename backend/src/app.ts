@@ -84,6 +84,26 @@ app.use('/api/admin', adminRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/audit-logs', auditRouter);
 
+import fs from 'fs';
+import path from 'path';
+
+// Serve frontend SPA static files if present
+const possibleDistPaths = [
+  path.resolve(process.cwd(), '../frontend/dist'),
+  path.resolve(process.cwd(), 'frontend/dist'),
+];
+
+for (const p of possibleDistPaths) {
+  if (fs.existsSync(path.join(p, 'index.html'))) {
+    app.use(express.static(p));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(p, 'index.html'));
+    });
+    break;
+  }
+}
+
 // Fallback for non-existent API routes
 app.use('/api/*', (_req, res) => {
   res.status(404).json({ error: 'Endpoint not found.' });
