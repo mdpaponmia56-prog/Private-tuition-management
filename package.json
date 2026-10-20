@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Production-ready Private Tuition Management System for teachers in Bangladesh",
   "private": true,
+  "type": "module",
   "workspaces": [
     "backend",
     "frontend"
