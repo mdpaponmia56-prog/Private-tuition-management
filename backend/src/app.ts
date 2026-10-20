@@ -112,8 +112,8 @@ app.use('/api/*', (_req, res) => {
 // Centralized error handler
 app.use(errorHandler);
 
-// Start server if executed directly
-if (process.env.NODE_ENV !== 'test') {
+// Start server if executed directly (and not running in Vercel serverless environment)
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   const server = app.listen(config.port, async () => {
     console.log(`[API Server] Running on http://localhost:${config.port} (${config.nodeEnv})`);
     await testConnection();
@@ -131,3 +131,6 @@ if (process.env.NODE_ENV !== 'test') {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 }
+
+export default app;
+

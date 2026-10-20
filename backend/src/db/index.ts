@@ -3,10 +3,11 @@ import { config } from '../config/index.js';
 
 const { Pool } = pg;
 
+const connectionString = config.databaseUrl || 'postgresql://localhost:5432/tuition_placeholder';
 export const pool = new Pool({
-  connectionString: config.databaseUrl,
-  ssl: config.databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false },
-  max: 20,
+  connectionString,
+  ssl: (!config.databaseUrl || config.databaseUrl.includes('localhost')) ? false : { rejectUnauthorized: false },
+  max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
 });
@@ -46,6 +47,10 @@ export async function withTransaction<T>(
 }
 
 export async function testConnection(): Promise<boolean> {
+  if (!config.databaseUrl) {
+    console.warn('[DB Connection]: DATABASE_URL is not configured in environment variables.');
+    return false;
+  }
   try {
     const res = await pool.query('SELECT NOW() as current_time, current_database() as db_name');
     console.log(`[DB Connected] DB: ${res.rows[0].db_name} at ${res.rows[0].current_time}`);
