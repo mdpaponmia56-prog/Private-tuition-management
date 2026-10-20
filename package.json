@@ -16,7 +16,7 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build:backend": "cd backend && npm run build && npx esbuild src/app.ts --bundle --platform=node --target=node24 --format=esm --outfile=../api/index.js --external:pg-native",
+    "build:backend": "cd backend && npm run build && npx esbuild src/app.ts --bundle --platform=node --target=node24 --format=esm --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" --outfile=../api/index.js --external:pg-native",
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:backend && npm run build:frontend",
     "start": "cd backend && npm start",
