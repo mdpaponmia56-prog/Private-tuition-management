@@ -117,19 +117,19 @@ export const PaymentHistory: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="card" style={{ padding: 18, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+      <div className="card" style={{ padding: 14, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: 10 }}>
           {/* Search */}
           <div style={{ position: 'relative' }}>
             <input
               type="text"
               className="form-control"
-              placeholder="Search receipt #, student, TrxID..."
+              placeholder="Search receipt #, student..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: 36 }}
+              style={{ paddingLeft: 34 }}
             />
-            <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 12 }} />
+            <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: 10, top: 12 }} />
           </div>
 
           {/* Payment Method */}
@@ -138,12 +138,12 @@ export const PaymentHistory: React.FC = () => {
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
           >
-            <option value="ALL">All Payment Methods</option>
+            <option value="ALL">All Methods</option>
             <option value="CASH">Cash</option>
             <option value="BKASH">bKash</option>
             <option value="NAGAD">Nagad</option>
             <option value="ROCKET">Rocket</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="BANK_TRANSFER">Bank</option>
           </select>
 
           {/* Status */}
@@ -153,7 +153,7 @@ export const PaymentHistory: React.FC = () => {
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="ALL">All Statuses</option>
-            <option value="COMPLETED">Completed (Valid)</option>
+            <option value="COMPLETED">Completed</option>
             <option value="REVERSED">Reversed</option>
           </select>
 
@@ -176,8 +176,8 @@ export const PaymentHistory: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment Transactions Table */}
-      <div className="table-responsive">
+      {/* Desktop Payment Transactions Table View */}
+      <div className="table-responsive desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -275,6 +275,81 @@ export const PaymentHistory: React.FC = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Payment Cards View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t.loading}
+          </div>
+        ) : payments.length > 0 ? (
+          payments.map((p) => {
+            const isReversed = p.status === 'REVERSED';
+            return (
+              <div key={p.id} className="entity-card" style={{ padding: 14, opacity: isReversed ? 0.75 : 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <div>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.92rem' }}>
+                      {p.receipt_number}
+                    </span>
+                    <div style={{ fontWeight: 700, fontSize: '0.98rem', marginTop: 2 }}>
+                      {p.student_name}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {p.student_code} &bull; {p.batch_name}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: isReversed ? 'var(--text-muted)' : 'var(--primary)', textDecoration: isReversed ? 'line-through' : 'none' }}>
+                      {formatBDT(p.amount, language)}
+                    </div>
+                    <span className={`badge ${isReversed ? 'badge-overdue' : 'badge-paid'}`} style={{ fontSize: '0.7rem' }}>
+                      {p.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#f8fafc', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', margin: '8px 0' }}>
+                  <span>{p.payment_date} &bull; <strong>{p.payment_method}</strong> {p.transaction_reference ? `(${p.transaction_reference})` : ''}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>By: {p.recorded_by_admin}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => viewReceipt(p.id)}
+                    style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                  >
+                    <Receipt size={14} />
+                    <span>Receipt</span>
+                  </button>
+
+                  {!isReversed && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setReversalPayment(p);
+                        setReversalReason('');
+                        setReversalError('');
+                      }}
+                      style={{ color: 'var(--danger)', minHeight: '38px', padding: '6px 14px' }}
+                    >
+                      <RotateCcw size={14} />
+                      <span>Reverse</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t.noData}
+          </div>
+        )}
       </div>
 
       {/* Printable Receipt Modal */}

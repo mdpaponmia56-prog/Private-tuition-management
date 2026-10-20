@@ -128,11 +128,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
           {/* Batch selector */}
           <select
             className="form-control"
-            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
+            style={{ flex: '1 1 140px', minWidth: '120px', fontWeight: 600, fontSize: '0.85rem' }}
             value={selectedBatchId}
             onChange={(e) => setSelectedBatchId(e.target.value ? parseInt(e.target.value, 10) : '')}
           >
@@ -147,7 +147,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Month selector */}
           <select
             className="form-control"
-            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
+            style={{ flex: '1 1 110px', minWidth: '100px', fontWeight: 600, fontSize: '0.85rem' }}
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
           >
@@ -161,7 +161,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           {/* Year selector */}
           <select
             className="form-control"
-            style={{ width: 'auto', fontWeight: 600, fontSize: '0.85rem' }}
+            style={{ flex: '1 1 80px', minWidth: '75px', fontWeight: 600, fontSize: '0.85rem' }}
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
           >
@@ -177,6 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             className="btn btn-secondary btn-icon"
             onClick={() => fetchDashboard(false)}
             title="Refresh Live Data"
+            style={{ minWidth: 40, height: 40 }}
           >
             <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
           </button>
@@ -252,42 +253,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
 
           {/* Secondary Stat Mini Cards (Status Distribution) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
-            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <CheckCircle2 size={28} color="var(--success)" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 12, marginBottom: 24 }}>
+            <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <CheckCircle2 size={24} color="var(--success)" style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t.fullyPaidStudents}</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.fullyPaidCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.fullyPaidStudents}</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>{data.cards.fullyPaidCount}</div>
               </div>
             </div>
 
-            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <TrendingUp size={28} color="var(--warning)" />
+            <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <TrendingUp size={24} color="var(--warning)" style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Partial Payments</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.partialCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Partial Payments</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>{data.cards.partialCount}</div>
               </div>
             </div>
 
-            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <AlertCircle size={28} color="#64748b" />
+            <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AlertCircle size={24} color="#64748b" style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Unpaid (Within Deadline)</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{data.cards.unpaidCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unpaid</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>{data.cards.unpaidCount}</div>
               </div>
             </div>
 
-            <div className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <AlertCircle size={28} color="var(--danger)" />
+            <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AlertCircle size={24} color="var(--danger)" style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Overdue Past Grace Period</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--danger)' }}>{data.cards.overdueCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Overdue</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--danger)' }}>{data.cards.overdueCount}</div>
               </div>
             </div>
           </div>
 
           {/* Visual Charts & Trends Section */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: 20, marginBottom: 24 }}>
             {/* 6-Month Collection Trend Bar Chart (SVG) */}
             <div className="card">
               <div className="card-header">
@@ -405,7 +406,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
 
           {/* Bottom Grid: Recent Payments & Urgent Follow-ups */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: 20 }}>
             {/* Recent Payments */}
             <div className="card">
               <div className="card-header">
@@ -418,7 +419,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </button>
               </div>
 
-              <div className="table-responsive" style={{ border: 'none' }}>
+              {/* Desktop Table */}
+              <div className="table-responsive desktop-only" style={{ border: 'none' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -465,6 +467,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Cards View */}
+              <div className="mobile-only" style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(data.recentPayments || []).length > 0 ? (
+                  (data.recentPayments || []).map((p: any) => (
+                    <div key={p.id} className="entity-card" style={{ padding: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.student_name || p.studentName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {p.batch_name || p.batchName} &bull; <span style={{ fontFamily: 'monospace' }}>{p.receipt_number || p.receiptNumber}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>
+                          {formatBDT(p.amount, language)}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.payment_date || p.paymentDate}</span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => viewReceipt(p.id)}
+                          style={{ minHeight: '36px', padding: '4px 10px', fontSize: '0.8rem' }}
+                        >
+                          <Receipt size={14} />
+                          <span>Receipt</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)' }}>
+                    {t.noData}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Urgent Follow-ups (Overdue Students) */}
@@ -479,7 +518,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </button>
               </div>
 
-              <div className="table-responsive" style={{ border: 'none' }}>
+              {/* Desktop Table View */}
+              <div className="table-responsive desktop-only" style={{ border: 'none' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -523,6 +563,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Cards View */}
+              <div className="mobile-only" style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(data.followUpAlerts || data.urgentFollowUps || []).length > 0 ? (
+                  (data.followUpAlerts || data.urgentFollowUps || []).map((s: any) => (
+                    <div key={s.student_id || s.studentId} className="entity-card" style={{ padding: '12px', borderLeft: '4px solid var(--danger)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{s.full_name || s.fullName}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.batch_name || s.batchName}</div>
+                        </div>
+                        <div style={{ fontWeight: 800, color: 'var(--danger)', fontSize: '0.95rem' }}>
+                          {formatBDT(s.total_due || s.totalDue, language)}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                        <a
+                          href={`tel:${s.guardian_phone || s.guardianPhone}`}
+                          style={{ fontSize: '0.78rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          📞 {s.guardian_phone || s.guardianPhone}
+                        </a>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => setSelectedReminderStudentId(s.student_id || s.studentId)}
+                          style={{ minHeight: '36px', padding: '4px 10px', fontSize: '0.8rem' }}
+                        >
+                          <MessageSquare size={14} />
+                          <span>Remind</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)' }}>
+                    No overdue students requiring urgent follow-up!
+                  </div>
+                )}
               </div>
             </div>
           </div>

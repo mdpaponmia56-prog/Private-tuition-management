@@ -65,8 +65,8 @@ export const AuditLogs: React.FC = () => {
         </div>
       </div>
 
-      {/* Logs Table */}
-      <div className="table-responsive">
+      {/* Desktop Logs Table View */}
+      <div className="table-responsive desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -130,6 +130,56 @@ export const AuditLogs: React.FC = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Audit Cards View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t.loading}
+          </div>
+        ) : logs.length > 0 ? (
+          logs.map((log) => (
+            <div key={log.id} className="entity-card" style={{ padding: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                <div>
+                  <span className="badge" style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: 700, fontSize: '0.75rem' }}>
+                    {log.action}
+                  </span>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: 4 }}>
+                    {log.admin_name}
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {new Date(log.created_at).toLocaleDateString()}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', margin: '6px 0' }}>
+                <span>Entity: <strong>{log.entity_type}</strong> #{log.entity_id || '—'}</span>
+                <span style={{ fontFamily: 'monospace' }}>{log.ip_address || '—'}</span>
+              </div>
+
+              {(log.old_values || log.new_values) && (
+                <div style={{ paddingTop: 6, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setSelectedLog(log)}
+                    style={{ minHeight: '34px', padding: '3px 10px', fontSize: '0.78rem' }}
+                  >
+                    <Eye size={12} />
+                    <span>Inspect</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+            {t.noData}
+          </div>
+        )}
       </div>
 
       {/* Inspect Log Modal */}

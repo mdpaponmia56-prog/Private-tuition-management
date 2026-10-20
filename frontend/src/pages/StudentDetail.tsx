@@ -283,77 +283,81 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
           </div>
 
           {/* Quick Actions & Outstanding Balance */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ textAlign: 'right' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', width: '100%', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
+            <div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Balance Due</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: (summary?.totalDue || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: (summary?.totalDue || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
                 {formatBDT(summary?.totalDue || 0, language)}
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => onCollectFee(student)}
-            >
-              <CreditCard size={18} />
-              <span>Collect Fee</span>
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onCollectFee(student)}
+                style={{ minHeight: '40px', padding: '6px 14px' }}
+              >
+                <CreditCard size={18} />
+                <span>Collect Fee</span>
+              </button>
 
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
-              onClick={() => setShowDeleteStudentModal(true)}
-              title="Delete Student Profile"
-            >
-              <Trash2 size={16} />
-              <span>Delete Student</span>
-            </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ borderColor: 'var(--danger)', color: 'var(--danger)', minHeight: '40px', padding: '6px 12px' }}
+                onClick={() => setShowDeleteStudentModal(true)}
+                title="Delete Student Profile"
+              >
+                <Trash2 size={16} />
+                <span className="desktop-only">Delete Student</span>
+                <span className="mobile-only">Delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs Bar */}
-      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', marginBottom: 20 }}>
+      {/* Tabs Bar (Horizontally scrollable on mobile) */}
+      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', marginBottom: 20, overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 4 }}>
         <button
           type="button"
           className={`btn btn-secondary ${activeTab === 'ledger' ? 'btn-primary' : ''}`}
           onClick={() => setActiveTab('ledger')}
-          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none', whiteSpace: 'nowrap', flexShrink: 0, minHeight: '38px' }}
         >
           <DollarSign size={16} />
-          <span>Monthly Fee Ledger ({billingRecords.length})</span>
+          <span>Monthly Ledger ({billingRecords.length})</span>
         </button>
 
         <button
           type="button"
           className={`btn btn-secondary ${activeTab === 'payments' ? 'btn-primary' : ''}`}
           onClick={() => setActiveTab('payments')}
-          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none', whiteSpace: 'nowrap', flexShrink: 0, minHeight: '38px' }}
         >
           <History size={16} />
-          <span>Payment History ({paymentTransactions.length})</span>
+          <span>Payments ({paymentTransactions.length})</span>
         </button>
 
         <button
           type="button"
           className={`btn btn-secondary ${activeTab === 'enrollment' ? 'btn-primary' : ''}`}
           onClick={() => setActiveTab('enrollment')}
-          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none', whiteSpace: 'nowrap', flexShrink: 0, minHeight: '38px' }}
         >
           <Calendar size={16} />
-          <span>Batch & Enrollment History ({enrollmentHistory.length})</span>
+          <span>Enrollment ({enrollmentHistory.length})</span>
         </button>
 
         <button
           type="button"
           className={`btn btn-secondary ${activeTab === 'statement' ? 'btn-primary' : ''}`}
           onClick={() => setActiveTab('statement')}
-          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none', whiteSpace: 'nowrap', flexShrink: 0, minHeight: '38px' }}
         >
           <FileText size={16} />
-          <span>Printable Statement</span>
+          <span>Statement</span>
         </button>
       </div>
 
@@ -374,7 +378,8 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
             </button>
           </div>
 
-          <div className="table-responsive">
+          {/* Desktop Table View */}
+          <div className="table-responsive desktop-only">
             <table className="data-table">
               <thead>
                 <tr>
@@ -452,67 +457,185 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Ledger Cards View */}
+          <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {billingRecords.length > 0 ? (
+              billingRecords.map((bill) => (
+                <div key={bill.id} className="entity-card" style={{ padding: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                      {monthNames[bill.billingMonth - 1]} {bill.billingYear}
+                    </div>
+                    {getStatusBadge(bill.status)}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 10px', background: '#f8fafc', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', marginBottom: 8 }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Net Obligation:</span>
+                      <span style={{ fontWeight: 600 }}>{formatBDT(bill.netFee, language)}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Remaining Due:</span>
+                      <span style={{ fontWeight: 700, color: bill.balance > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                        {formatBDT(bill.balance, language)}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Paid Amount:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{formatBDT(bill.paidAmount, language)}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Due Date:</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{bill.dueDate}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions for this bill */}
+                  {(bill.balance > 0 || bill.paidAmount === 0) && (
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                      {bill.balance > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            setShowAdjustmentModal(bill.id);
+                            setAdjAmount('');
+                            setAdjReason('');
+                          }}
+                          style={{ minHeight: '36px', padding: '4px 10px' }}
+                        >
+                          <Gift size={13} />
+                          <span>Waiver</span>
+                        </button>
+                      )}
+                      {bill.paidAmount === 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ color: 'var(--danger)', minHeight: '36px', padding: '4px 10px' }}
+                          onClick={() => handleDeleteBill(bill)}
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                No billing records generated for this student yet.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 2: PAYMENT HISTORY */}
       {activeTab === 'payments' && (
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Receipt #</th>
-                <th>Payment Date</th>
-                <th>Amount Received</th>
-                <th>Payment Method</th>
-                <th>Transaction Reference</th>
-                <th>Recorded By</th>
-                <th>Status</th>
-                <th>Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentTransactions.length > 0 ? (
-                paymentTransactions.map((pt) => (
-                  <tr key={pt.id}>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{pt.receipt_number}</td>
-                    <td>{pt.payment_date}</td>
-                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                      {formatBDT(pt.amount, language)}
-                    </td>
-                    <td>
-                      <span className="badge" style={{ background: '#f1f5f9', color: '#0f172a' }}>
-                        {pt.payment_method}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: 'monospace' }}>{pt.transaction_reference || '—'}</td>
-                    <td>{pt.recorded_by_admin}</td>
-                    <td>
-                      <span className={`badge ${pt.status === 'COMPLETED' ? 'badge-paid' : 'badge-overdue'}`}>
-                        {pt.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => viewReceipt(pt.id)}
-                      >
-                        <Receipt size={14} />
-                        <span>Receipt</span>
-                      </button>
+        <div>
+          {/* Desktop Table View */}
+          <div className="table-responsive desktop-only">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Payment Date</th>
+                  <th>Amount Received</th>
+                  <th>Payment Method</th>
+                  <th>Transaction Reference</th>
+                  <th>Recorded By</th>
+                  <th>Status</th>
+                  <th>Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paymentTransactions.length > 0 ? (
+                  paymentTransactions.map((pt) => (
+                    <tr key={pt.id}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{pt.receipt_number}</td>
+                      <td>{pt.payment_date}</td>
+                      <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                        {formatBDT(pt.amount, language)}
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: '#f1f5f9', color: '#0f172a' }}>
+                          {pt.payment_method}
+                        </span>
+                      </td>
+                      <td style={{ fontFamily: 'monospace' }}>{pt.transaction_reference || '—'}</td>
+                      <td>{pt.recorded_by_admin}</td>
+                      <td>
+                        <span className={`badge ${pt.status === 'COMPLETED' ? 'badge-paid' : 'badge-overdue'}`}>
+                          {pt.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => viewReceipt(pt.id)}
+                        >
+                          <Receipt size={14} />
+                          <span>Receipt</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                      No payment transactions recorded for this student yet.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
-                    No payment transactions recorded for this student yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Payments Cards View */}
+          <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {paymentTransactions.length > 0 ? (
+              paymentTransactions.map((pt) => (
+                <div key={pt.id} className="entity-card" style={{ padding: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <div>
+                      <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.9rem' }}>
+                        {pt.receipt_number}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {pt.payment_date} &bull; {pt.payment_method}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>
+                      {formatBDT(pt.amount, language)}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      By: {pt.recorded_by_admin}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => viewReceipt(pt.id)}
+                      style={{ minHeight: '36px', padding: '4px 12px' }}
+                    >
+                      <Receipt size={14} />
+                      <span>Receipt</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+                No payment transactions recorded for this student yet.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -564,20 +687,21 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
               <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Tuition Fee Ledger & Payment Summary</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, fontSize: '0.88rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 14, marginBottom: 20, fontSize: '0.88rem' }}>
               <div>
                 <div><strong>Student Name:</strong> {student.full_name}</div>
                 <div><strong>Student ID:</strong> {student.student_code}</div>
                 <div><strong>Batch:</strong> {student.batch_name} ({student.class_name})</div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div>
                 <div><strong>Guardian Phone:</strong> {student.guardian_phone}</div>
                 <div><strong>Admission Date:</strong> {student.admission_date}</div>
                 <div><strong>Statement Date:</strong> {new Date().toISOString().slice(0, 10)}</div>
               </div>
             </div>
 
-            <table className="data-table" style={{ marginBottom: 24 }}>
+            <div className="table-responsive" style={{ marginBottom: 24 }}>
+              <table className="data-table">
               <thead>
                 <tr>
                   <th>Period</th>
@@ -603,8 +727,9 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({ studentId, onBack,
                 ))}
               </tbody>
             </table>
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '1rem', fontWeight: 800, padding: 12, background: '#f8fafc', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '1rem', fontWeight: 800, padding: 12, background: '#f8fafc', borderRadius: 'var(--radius-md)' }}>
               <span>Net Total Balance Due:&nbsp;</span>
               <span style={{ color: (summary?.totalDue || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
                 {formatBDT(summary?.totalDue || 0, language)}

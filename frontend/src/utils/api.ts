@@ -21,7 +21,10 @@ export async function apiFetch<T = any>(
 
   if (response.status === 401) {
     localStorage.removeItem('tuition_token');
-    window.location.reload();
+    if (window.location.pathname !== '/login') {
+      window.history.replaceState(null, '', '/login');
+      window.dispatchEvent(new Event('popstate'));
+    }
     throw new Error('Session expired or unauthorized.');
   }
 

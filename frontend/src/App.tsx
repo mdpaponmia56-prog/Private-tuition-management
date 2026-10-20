@@ -4,6 +4,7 @@ import { apiFetch } from './utils/api.js';
 import { Login } from './pages/Login.js';
 import { Navbar } from './components/Navbar.js';
 import { Sidebar, TabType } from './components/Sidebar.js';
+import { BottomNav } from './components/BottomNav.js';
 import { Dashboard } from './pages/Dashboard.js';
 import { Students } from './pages/Students.js';
 import { StudentDetail } from './pages/StudentDetail.js';
@@ -103,7 +104,13 @@ export const App: React.FC = () => {
 
   // Strict Private Website Access: If not authenticated, only Login is accessible
   if (!isAuthenticated) {
-    return <Login />;
+    if (window.location.pathname !== '/login') {
+      window.history.replaceState(null, '', '/login');
+    }
+    return <Login onSuccess={() => {
+      const target = getInitialTab();
+      navigateToTab(target === 'admins' ? 'admins' : 'dashboard');
+    }} />;
   }
 
   const navigateToTab = (tab: TabType) => {
@@ -183,6 +190,13 @@ export const App: React.FC = () => {
           )}
         </main>
       </div>
+
+      <BottomNav
+        currentTab={currentTab}
+        onSelectTab={navigateToTab}
+        onOpenMenu={() => setIsSidebarOpen(true)}
+        isMenuOpen={isSidebarOpen}
+      />
     </div>
   );
 };

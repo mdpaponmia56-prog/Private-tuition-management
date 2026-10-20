@@ -72,41 +72,45 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* Quick CSV Export Shortcuts */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <a
             href="/api/reports/export/collections.csv"
             download
-            className="btn btn-secondary"
+            className="btn btn-secondary btn-sm"
+            style={{ minHeight: '38px' }}
           >
             <FileSpreadsheet size={16} />
-            <span>Export Collections CSV</span>
+            <span>Collections CSV</span>
           </a>
           <a
             href="/api/reports/export/dues.csv"
             download
-            className="btn btn-secondary"
+            className="btn btn-secondary btn-sm"
+            style={{ minHeight: '38px' }}
           >
             <FileSpreadsheet size={16} />
-            <span>Export Dues CSV</span>
+            <span>Dues CSV</span>
           </a>
         </div>
       </div>
 
       {/* Report Selector Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
         <button
           type="button"
           className={`btn ${activeReport === 'monthly' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveReport('monthly')}
+          style={{ flex: '1 1 auto', minHeight: '40px', justifyContent: 'center' }}
         >
           <TrendingUp size={16} />
-          <span>Annual / Monthly Collection Summary</span>
+          <span>Annual / Monthly Summary</span>
         </button>
 
         <button
           type="button"
           className={`btn ${activeReport === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveReport('daily')}
+          style={{ flex: '1 1 auto', minHeight: '40px', justifyContent: 'center' }}
         >
           <Calendar size={16} />
           <span>Daily Collection Ledger</span>

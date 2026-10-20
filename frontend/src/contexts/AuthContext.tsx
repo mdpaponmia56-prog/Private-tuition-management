@@ -21,8 +21,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/me', {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('tuition_token') || ''}`,
         },
+        credentials: 'include',
       });
 
       if (res.ok) {
@@ -49,17 +49,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
+        credentials: 'include',
       });
 
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.error || 'Login failed.' };
+        return { success: false, error: data.error || 'Invalid email or password.' };
       }
 
-      if (data.token) {
-        localStorage.setItem('tuition_token', data.token);
-      }
+      // Secure cookie 'tuition_session' handles authentication; wipe any legacy token in storage
+      localStorage.removeItem('tuition_token');
       setAdmin(data.admin);
       return { success: true };
     } catch {
@@ -72,12 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('tuition_token') || ''}`,
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
+    } catch (err) {
+      console.error('[Logout Request Error]:', err);
     } finally {
       localStorage.removeItem('tuition_token');
       setAdmin(null);
+      if (window.location.pathname !== '/login') {
+        window.history.replaceState(null, '', '/login');
+      }
     }
   };
 

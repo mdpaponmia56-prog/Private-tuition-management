@@ -232,7 +232,7 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
       </div>
 
       {activeMode === 'collect' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 18 }}>
           {/* Left Column: Select Student & Dues */}
           <div>
             <div className="card" style={{ marginBottom: 20 }}>
@@ -272,6 +272,7 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           borderBottom: '1px solid #f1f5f9',
+                          minHeight: '44px',
                         }}
                       >
                         <div>
@@ -331,6 +332,7 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
+                            minHeight: '44px',
                           }}
                         >
                           <div>
@@ -357,13 +359,17 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
                     <div
                       onClick={() => setTargetBillId('')}
                       style={{
-                        padding: '8px 12px',
+                        padding: '10px 12px',
                         borderRadius: 'var(--radius-md)',
                         border: targetBillId === '' ? '2px solid var(--primary)' : '1px dashed var(--border-color)',
                         textAlign: 'center',
                         fontSize: '0.82rem',
                         cursor: 'pointer',
                         color: 'var(--text-muted)',
+                        minHeight: '44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       Auto-allocate payment to oldest unpaid bills or general tuition advance
@@ -399,6 +405,7 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
                   <label className="form-label">Payment Amount (BDT / ৳) *</label>
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="10"
                     required
                     className="form-control"
@@ -409,23 +416,35 @@ export const FeeCollection: React.FC<FeeCollectionProps> = ({ initialStudent }) 
                   />
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{t.paymentMethod} *</label>
-                    <select
-                      className="form-control"
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value as any)}
-                    >
-                      <option value="CASH">Cash (নগদ)</option>
-                      <option value="BKASH">bKash (বিকাশ)</option>
-                      <option value="NAGAD">Nagad (নগদ অ্যাপ)</option>
-                      <option value="ROCKET">Rocket (রকেট)</option>
-                      <option value="BANK_TRANSFER">Bank Transfer</option>
-                      <option value="OTHER">Other</option>
-                    </select>
+                <div className="form-group" style={{ marginBottom: 12 }}>
+                  <label className="form-label">{t.paymentMethod} *</label>
+                  {/* Quick Mobile Touch Pills */}
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {(['CASH', 'BKASH', 'NAGAD', 'ROCKET', 'BANK_TRANSFER'] as const).map((method) => {
+                      const isSelected = paymentMethod === method;
+                      const labels: Record<string, string> = {
+                        CASH: '💵 Cash',
+                        BKASH: '📱 bKash',
+                        NAGAD: '📱 Nagad',
+                        ROCKET: '🚀 Rocket',
+                        BANK_TRANSFER: '🏦 Bank',
+                      };
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setPaymentMethod(method)}
+                          style={{ minHeight: '38px', padding: '6px 12px', fontSize: '0.82rem', flex: '1 1 auto' }}
+                        >
+                          {labels[method]}
+                        </button>
+                      );
+                    })}
                   </div>
+                </div>
 
+                <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">{t.paymentDate} *</label>
                     <input

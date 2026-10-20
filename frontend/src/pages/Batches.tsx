@@ -243,12 +243,13 @@ export const Batches: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => openEditModal(batch)}
                       title="Edit Batch"
+                      style={{ minHeight: '36px' }}
                     >
                       <Edit2 size={14} />
                       <span>{t.edit}</span>
@@ -259,6 +260,7 @@ export const Batches: React.FC = () => {
                       className="btn btn-secondary btn-sm"
                       onClick={() => toggleArchiveBatch(batch)}
                       title={batch.is_active ? 'Archive Batch' : 'Restore Batch'}
+                      style={{ minHeight: '36px' }}
                     >
                       {batch.is_active ? <Archive size={14} /> : <RotateCcw size={14} color="var(--success)" />}
                     </button>
@@ -266,7 +268,7 @@ export const Batches: React.FC = () => {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      style={{ color: 'var(--danger)' }}
+                      style={{ color: 'var(--danger)', minHeight: '36px' }}
                       onClick={() => openDeleteModal(batch)}
                       title="Permanently Delete Batch"
                     >
@@ -278,39 +280,40 @@ export const Batches: React.FC = () => {
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => toggleExpand(batch.id)}
+                      style={{ minHeight: '36px' }}
                     >
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span>{isExpanded ? 'Hide Students' : `Students (${batch.active_student_count || 0})`}</span>
+                      <span>{isExpanded ? 'Hide' : `Students (${batch.active_student_count || 0})`}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Batch Metrics Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, background: '#f8fafc', padding: 14, borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 10, background: '#f8fafc', padding: 12, borderRadius: 'var(--radius-md)' }}>
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Default Tuition Fee</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {formatBDT(batch.default_fee, language)}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Enrolled Students</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Students</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {batch.active_student_count || 0}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Expected Monthly Fees</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Expected Monthly</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--primary)' }}>
                       {formatBDT(batch.expected_monthly_fees || 0, language)}
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total Outstanding Dues</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: (batch.total_outstanding_dues || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Outstanding Due</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: (batch.total_outstanding_dues || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
                       {formatBDT(batch.total_outstanding_dues || 0, language)}
                     </div>
                   </div>
@@ -323,38 +326,40 @@ export const Batches: React.FC = () => {
                     {studentsLoading ? (
                       <div style={{ padding: 14, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t.loading}</div>
                     ) : batchStudents.length > 0 ? (
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Student ID</th>
-                            <th>Full Name</th>
-                            <th>Guardian Phone</th>
-                            <th>Monthly Fee</th>
-                            <th>Status</th>
-                            <th>Current Due</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {batchStudents.map((s) => (
-                            <tr key={s.id}>
-                              <td style={{ fontFamily: 'monospace' }}>{s.student_code}</td>
-                              <td style={{ fontWeight: 600 }}>{s.full_name}</td>
-                              <td>{s.guardian_phone}</td>
-                              <td>
-                                {s.monthly_fee ? formatBDT(s.monthly_fee, language) : `${formatBDT(batch.default_fee, language)} (Default)`}
-                              </td>
-                              <td>
-                                <span className={`badge ${s.status === 'ACTIVE' ? 'badge-active' : 'badge-archived'}`}>
-                                  {s.status}
-                                </span>
-                              </td>
-                              <td style={{ fontWeight: 700, color: parseFloat(s.total_due || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
-                                {formatBDT(s.total_due, language)}
-                              </td>
+                      <div className="table-responsive">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>Student ID</th>
+                              <th>Full Name</th>
+                              <th>Guardian Phone</th>
+                              <th>Monthly Fee</th>
+                              <th>Status</th>
+                              <th>Current Due</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {batchStudents.map((s) => (
+                              <tr key={s.id}>
+                                <td style={{ fontFamily: 'monospace' }}>{s.student_code}</td>
+                                <td style={{ fontWeight: 600 }}>{s.full_name}</td>
+                                <td>{s.guardian_phone}</td>
+                                <td>
+                                  {s.monthly_fee ? formatBDT(s.monthly_fee, language) : `${formatBDT(batch.default_fee, language)} (Default)`}
+                                </td>
+                                <td>
+                                  <span className={`badge ${s.status === 'ACTIVE' ? 'badge-active' : 'badge-archived'}`}>
+                                    {s.status}
+                                  </span>
+                                </td>
+                                <td style={{ fontWeight: 700, color: parseFloat(s.total_due || 0) > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                                  {formatBDT(s.total_due, language)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     ) : (
                       <div style={{ padding: 12, color: 'var(--text-muted)', fontSize: '0.85rem' }}>No students enrolled in this batch yet.</div>
                     )}

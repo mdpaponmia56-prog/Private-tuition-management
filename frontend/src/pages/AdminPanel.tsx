@@ -274,7 +274,7 @@ export const AdminPanel: React.FC = () => {
       )}
 
       {/* Grid of Admin Slots */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
         {administrators.map((adm, idx) => (
           <div key={adm.id} className="card" style={{ position: 'relative', overflow: 'hidden' }}>
             <div style={{

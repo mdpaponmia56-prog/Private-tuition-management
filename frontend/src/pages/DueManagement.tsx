@@ -95,24 +95,24 @@ export const DueManagement: React.FC<DueManagementProps> = ({ onCollectFeeForStu
 
       {/* Summary Stat Banner */}
       {dueData && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
-          <div className="card" style={{ padding: '16px 20px', borderLeft: '4px solid var(--danger)' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{t.totalOutstandingDues}</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--danger)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 12, marginBottom: 20 }}>
+          <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--danger)' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.totalOutstandingDues}</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--danger)' }}>
               {formatBDT(dueData.summary.totalDueAmount, language)}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', borderLeft: '4px solid var(--warning)' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Students with Unpaid Dues</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>
+          <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid var(--warning)' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unpaid Students</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>
               {dueData.summary.totalDueStudents}
             </div>
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', borderLeft: '4px solid #991b1b' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Critical Overdue Past Grace Period</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#991b1b' }}>
+          <div className="card" style={{ padding: '14px 16px', borderLeft: '4px solid #991b1b' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Critical Overdue</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#991b1b' }}>
               {dueData.summary.overdueStudentsCount}
             </div>
           </div>
@@ -120,18 +120,18 @@ export const DueManagement: React.FC<DueManagementProps> = ({ onCollectFeeForStu
       )}
 
       {/* Filter Bar */}
-      <div className="card" style={{ padding: 18, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+      <div className="card" style={{ padding: 14, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 10 }}>
           <div style={{ position: 'relative' }}>
             <input
               type="text"
               className="form-control"
-              placeholder="Search by student name, code, phone..."
+              placeholder="Search student or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: 36 }}
+              style={{ paddingLeft: 34 }}
             />
-            <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: 12 }} />
+            <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: 10, top: 12 }} />
           </div>
 
           <select
@@ -147,17 +147,18 @@ export const DueManagement: React.FC<DueManagementProps> = ({ onCollectFeeForStu
 
           <input
             type="number"
+            inputMode="decimal"
             step="100"
             className="form-control"
-            placeholder="Min Due Amount (e.g. 2000)"
+            placeholder="Min Due Amount (৳)"
             value={minDue}
             onChange={(e) => setMinDue(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Dues Table */}
-      <div className="table-responsive">
+      {/* Desktop Dues Table View */}
+      <div className="table-responsive desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -271,6 +272,93 @@ export const DueManagement: React.FC<DueManagementProps> = ({ onCollectFeeForStu
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Dues Cards View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t.loading}
+          </div>
+        ) : dueData && dueData.students.length > 0 ? (
+          dueData.students.map((item) => (
+            <div key={item.studentId} className="entity-card" style={{ padding: 14, borderLeft: '4px solid var(--danger)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.98rem' }}>{item.studentName}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: 6, marginTop: 2 }}>
+                    <span style={{ fontFamily: 'monospace' }}>{item.studentCode}</span>
+                    <span>&bull;</span>
+                    <span>{item.batchName}</span>
+                  </div>
+                </div>
+                <span className="badge badge-overdue" style={{ fontSize: '0.72rem' }}>
+                  {item.overdueMonthsCount} {item.overdueMonthsCount === 1 ? 'Month' : 'Months'} Due
+                </span>
+              </div>
+
+              {/* Financial Detail Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 10px', background: '#f8fafc', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', margin: '8px 0' }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Total Due:</span>
+                  <span style={{ fontWeight: 800, color: 'var(--danger)', fontSize: '1.05rem' }}>
+                    {formatBDT(item.totalOutstandingDue, language)}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Oldest Unpaid:</span>
+                  <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>
+                    {item.oldestBillingPeriod}
+                  </span>
+                </div>
+              </div>
+
+              {/* Guardian Call Shortcut */}
+              <div style={{ marginBottom: 10 }}>
+                <a
+                  href={`tel:${item.guardianPhone}`}
+                  style={{ color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.82rem', fontWeight: 600 }}
+                >
+                  📞 Guardian: <span style={{ fontFamily: 'monospace' }}>{item.guardianPhone}</span>
+                </a>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => setSelectedReminderStudentId(item.studentId)}
+                  style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                >
+                  <MessageSquare size={14} />
+                  <span>Reminder</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => onCollectFeeForStudent({
+                    id: item.studentId,
+                    full_name: item.studentName,
+                    student_code: item.studentCode,
+                    guardian_phone: item.guardianPhone,
+                    batch_name: item.batchName,
+                    class_name: item.className,
+                  })}
+                  style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                >
+                  <CreditCard size={14} />
+                  <span>Collect Fee</span>
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            🎉 No outstanding dues found matching current filters!
+          </div>
+        )}
       </div>
 
       {/* Reminder Message Modal */}

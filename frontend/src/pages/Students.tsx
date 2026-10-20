@@ -190,8 +190,8 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="card" style={{ padding: 18, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+      <div className="card" style={{ padding: 14, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 10 }}>
           {/* Search */}
           <div style={{ position: 'relative' }}>
             <input
@@ -244,8 +244,8 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
         </div>
       </div>
 
-      {/* Students Table */}
-      <div className="table-responsive">
+      {/* Desktop Students Table View */}
+      <div className="table-responsive desktop-only">
         <table className="data-table">
           <thead>
             <tr>
@@ -406,6 +406,162 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
         </table>
       </div>
 
+      {/* Mobile Student Cards View */}
+      <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+            {t.loading}
+          </div>
+        ) : students.length > 0 ? (
+          students.map((student) => {
+            const due = parseFloat(String(student.total_due || 0));
+            return (
+              <div key={student.id} className="entity-card" style={{ padding: 14 }}>
+                {/* Header: Photo, Name, Code, Status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 'var(--radius-full)',
+                    background: '#f1f5f9',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: 'var(--primary)',
+                    flexShrink: 0,
+                    border: '1px solid var(--border-color)',
+                  }}>
+                    {student.photo_filename ? (
+                      <img
+                        src={`/api/students/${student.id}/photo`}
+                        alt={student.full_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e: any) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      student.full_name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.98rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {student.full_name}
+                      </div>
+                      <span className={`badge ${student.status === 'ACTIVE' ? 'badge-active' : 'badge-archived'}`} style={{ fontSize: '0.7rem' }}>
+                        {student.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: 8, marginTop: 2 }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{student.student_code}</span>
+                      <span>&bull;</span>
+                      <span>{student.batch_name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 10px', background: '#f8fafc', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', marginBottom: 10 }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Monthly Fee:</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {student.monthly_fee !== null ? formatBDT(student.monthly_fee, language) : 'Batch Default'}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>Balance Due:</span>
+                    <span style={{ fontWeight: 700, color: due > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                      {formatBDT(due, language)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Contact Links */}
+                <div style={{ display: 'flex', gap: 12, fontSize: '0.8rem', marginBottom: 12, flexWrap: 'wrap' }}>
+                  <a
+                    href={`tel:${student.guardian_phone}`}
+                    style={{ color: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+                  >
+                    📞 Guardian: <span style={{ fontFamily: 'monospace' }}>{student.guardian_phone}</span>
+                  </a>
+                  {student.student_phone && (
+                    <a
+                      href={`tel:${student.student_phone}`}
+                      style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      📱 Self: <span style={{ fontFamily: 'monospace' }}>{student.student_phone}</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Card Action Buttons */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => onSelectStudent(student.id)}
+                    style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                  >
+                    <Eye size={15} />
+                    <span>Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => onCollectFeeForStudent(student)}
+                    style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                  >
+                    <CreditCard size={15} />
+                    <span>Collect</span>
+                  </button>
+
+                  {student.status === 'ARCHIVED' ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm btn-icon"
+                      onClick={() => restoreStudent(student.id)}
+                      title="Restore"
+                      style={{ minWidth: 38, minHeight: 38 }}
+                    >
+                      <RotateCcw size={15} color="var(--success)" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm btn-icon"
+                      onClick={() => archiveStudent(student.id)}
+                      title="Archive"
+                      style={{ minWidth: 38, minHeight: 38 }}
+                    >
+                      <Archive size={15} color="#94a3b8" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm btn-icon"
+                    onClick={() => setStudentToDelete(student)}
+                    title="Delete"
+                    style={{ minWidth: 38, minHeight: 38, color: 'var(--danger)' }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
+            {t.noData}
+          </div>
+        )}
+      </div>
+
       {/* Register Student Modal */}
       {showAddModal && (
         <div className="modal-overlay">
@@ -443,7 +599,9 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
                   <div className="form-group">
                     <label className="form-label">{t.guardianPhone} *</label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       required
                       className="form-control"
                       placeholder="e.g. 01711223344"
@@ -457,7 +615,9 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
                   <div className="form-group">
                     <label className="form-label">{t.studentPhone}</label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       className="form-control"
                       placeholder="Optional student mobile"
                       value={studentPhone}
@@ -502,6 +662,7 @@ export const Students: React.FC<StudentsProps> = ({ onSelectStudent, onCollectFe
                     <label className="form-label">Monthly Fee Override (BDT)</label>
                     <input
                       type="number"
+                      inputMode="decimal"
                       step="50"
                       className="form-control"
                       placeholder="Leave blank to use batch default fee"

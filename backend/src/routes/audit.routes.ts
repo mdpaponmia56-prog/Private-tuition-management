@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 export const auditRouter = Router();
 
 auditRouter.use(requireAuth);
+auditRouter.use(requireRole(['OWNER']));
 
 /**
  * GET /api/audit - View immutable security & financial audit trail

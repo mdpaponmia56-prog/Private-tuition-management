@@ -57,13 +57,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-body" style={{ padding: 28 }}>
+        <div className="modal-body" style={{ padding: '16px' }}>
           {/* Printable Receipt Container */}
           <div className="receipt-voucher" style={{
             background: 'white',
             border: isReversed ? '2px dashed var(--danger)' : '1px solid #cbd5e1',
             borderRadius: 'var(--radius-lg)',
-            padding: 24,
+            padding: '16px',
             position: 'relative',
           }}>
             {/* Watermark for reversed transactions */}
@@ -71,15 +71,17 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <div style={{
                 position: 'absolute',
                 top: '40%',
-                left: '20%',
-                transform: 'rotate(-25deg)',
-                fontSize: '3.5rem',
+                left: '10%',
+                right: '10%',
+                textAlign: 'center',
+                transform: 'rotate(-20deg)',
+                fontSize: '2.5rem',
                 fontWeight: 900,
                 color: 'rgba(239, 68, 68, 0.18)',
                 pointerEvents: 'none',
-                letterSpacing: '0.15em',
+                letterSpacing: '0.1em',
                 border: '4px dashed rgba(239, 68, 68, 0.3)',
-                padding: '8px 24px',
+                padding: '8px 16px',
               }}>
                 REVERSED / বাতিল
               </div>
@@ -87,9 +89,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             {/* Institution Header */}
             <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: 12, marginBottom: 16 }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>{instName}</h2>
-              <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 2px 0', fontWeight: 500 }}>{instAddress}</p>
-              <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 6px 0', fontWeight: 600 }}>Official Contact / Helpline: {instContact}</p>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>{instName}</h2>
+              <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 2px 0', fontWeight: 500 }}>{instAddress}</p>
+              <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px 0', fontWeight: 600 }}>Official Contact / Helpline: {instContact}</p>
               <div style={{
                 display: 'inline-block',
                 marginTop: 6,
@@ -105,13 +107,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </div>
 
             {/* Meta Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, fontSize: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 10, marginBottom: 16, fontSize: '0.82rem' }}>
               <div>
                 <div><strong>Receipt No:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{receipt.receiptNumber}</span></div>
                 <div><strong>Payment Date:</strong> {receipt.paymentDate}</div>
                 <div><strong>Payment Method:</strong> {receipt.paymentMethod} {receipt.transactionReference ? `(Trx: ${receipt.transactionReference})` : ''}</div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div>
                 <div><strong>Student ID:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{receipt.student.studentCode}</span></div>
                 <div><strong>Student Name:</strong> {receipt.student.fullName}</div>
                 <div><strong>Batch:</strong> {receipt.student.batchName} ({receipt.student.className})</div>
@@ -120,48 +122,50 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </div>
 
             {/* Allocation Table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16, fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1' }}>
-                  <th style={{ padding: '8px 10px', textAlign: 'left' }}>Description / Billing Period</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Allocated Amount</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Remaining Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipt.allocations.length > 0 ? (
-                  receipt.allocations.map((alloc) => (
-                    <tr key={alloc.billingRecordId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 10px' }}>Tuition Fee ({alloc.billingPeriod})</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
-                        {formatBDT(alloc.allocatedAmount, language)}
-                      </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', color: alloc.remainingBillBalance > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
-                        {formatBDT(alloc.remainingBillBalance, language)}
+            <div className="table-responsive" style={{ marginBottom: 16, border: 'none' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1' }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Description / Period</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Allocated</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipt.allocations.length > 0 ? (
+                    receipt.allocations.map((alloc) => (
+                      <tr key={alloc.billingRecordId} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '8px 10px' }}>Tuition Fee ({alloc.billingPeriod})</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
+                          {formatBDT(alloc.allocatedAmount, language)}
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: alloc.remainingBillBalance > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                          {formatBDT(alloc.remainingBillBalance, language)}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '12px 10px', textAlign: 'center', color: '#64748b' }}>
+                        General advance payment / fee credit
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} style={{ padding: '12px 10px', textAlign: 'center', color: '#64748b' }}>
-                      General advance payment / fee credit
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Total Summary */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: 'var(--radius-md)', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: 'var(--radius-md)', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Total Student Balance Remaining</div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: receipt.totalStudentOutstandingBalance > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Balance Remaining</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: receipt.totalStudentOutstandingBalance > 0 ? 'var(--danger)' : 'var(--success-text)' }}>
                   {formatBDT(receipt.totalStudentOutstandingBalance, language)}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Total Paid Amount</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Paid Amount</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--primary)' }}>
                   {formatBDT(receipt.amount, language)}
                 </div>
               </div>
@@ -181,14 +185,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             )}
 
             {/* Signatures */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 40, paddingTop: 12, borderTop: '1px dashed #cbd5e1', fontSize: '0.8rem' }}>
-              <div style={{ textAlign: 'center', width: 180 }}>
-                <div style={{ height: 28 }}></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginTop: 24, paddingTop: 12, borderTop: '1px dashed #cbd5e1', fontSize: '0.8rem' }}>
+              <div style={{ textAlign: 'center', flex: '1 1 120px' }}>
+                <div style={{ height: 20 }}></div>
                 <div style={{ borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Guardian Signature</div>
               </div>
-              <div style={{ textAlign: 'center', width: 220 }}>
+              <div style={{ textAlign: 'center', flex: '1 1 140px' }}>
                 <div style={{ fontWeight: 600, color: '#0f172a' }}>{receipt.recordedByAdmin}</div>
-                <div style={{ borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Authorized Teacher / Officer</div>
+                <div style={{ borderTop: '1px solid #94a3b8', paddingTop: 4 }}>Authorized Teacher</div>
               </div>
             </div>
           </div>

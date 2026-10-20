@@ -3,7 +3,11 @@ import { useAuth } from '../contexts/AuthContext.js';
 import { useLanguage } from '../contexts/LanguageContext.js';
 import { Lock, Mail, ShieldAlert, KeyRound, CheckCircle2 } from 'lucide-react';
 
-export const Login: React.FC = () => {
+export interface LoginProps {
+  onSuccess?: () => void;
+}
+
+export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
   const { login } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -19,24 +23,13 @@ export const Login: React.FC = () => {
 
     const result = await login(email, password);
     if (!result.success) {
-      setError(result.error || 'Authentication failed.');
-    }
-    setLoading(false);
-  };
-
-  // Quick helper to fill the 3 authorized admin credentials for seamless evaluation
-  const setDemoAdmin = (roleIndex: number) => {
-    if (roleIndex === 1) {
-      setEmail('teacher.owner@tuition.bd');
-      setPassword('Teacher2026@Bangladesh!');
-    } else if (roleIndex === 2) {
-      setEmail('admin2.coordinator@tuition.bd');
-      setPassword('Coord2026@Bangladesh!');
+      setError(result.error || 'Authentication failed. Please check your credentials.');
+      setLoading(false);
     } else {
-      setEmail('admin3.assistant@tuition.bd');
-      setPassword('Assist2026@Bangladesh!');
+      if (onSuccess) {
+        onSuccess();
+      }
     }
-    setError('');
   };
 
   return (
@@ -46,7 +39,7 @@ export const Login: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      padding: 20,
+      padding: '16px 12px',
     }}>
       <div style={{
         maxWidth: 440,
@@ -54,31 +47,31 @@ export const Login: React.FC = () => {
         background: 'rgba(255, 255, 255, 0.98)',
         borderRadius: 'var(--radius-lg)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        padding: '36px 32px',
+        padding: '32px 24px',
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{
-            width: 54,
-            height: 54,
+            width: 56,
+            height: 56,
             borderRadius: 'var(--radius-lg)',
             background: 'linear-gradient(135deg, var(--primary), #0284c7)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.75rem',
+            fontSize: '1.8rem',
             fontWeight: 800,
             margin: '0 auto 14px',
             boxShadow: '0 8px 16px rgba(13, 148, 136, 0.3)',
           }}>
             ৳
           </div>
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
             Private Tuition Care
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 4 }}>
-            Secure Administrator Portal (Bangladesh)
+          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 6 }}>
+            {language === 'bn' ? 'প্রশাসনিক লগইন পোর্টাল' : 'Authorized Administrator Portal'}
           </p>
         </div>
 
@@ -101,26 +94,27 @@ export const Login: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Mail size={14} />
-              <span>Administrator Email</span>
+          <div className="form-group" style={{ marginBottom: 18 }}>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+              <Mail size={15} />
+              <span>{language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Administrator Email'}</span>
             </label>
             <input
               type="email"
               required
               className="form-control"
-              placeholder="e.g. teacher.owner@tuition.bd"
+              placeholder="admin@tuitioncare.bd"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
+              style={{ height: '46px', fontSize: '0.95rem' }}
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Lock size={14} />
-              <span>Password</span>
+          <div className="form-group" style={{ marginBottom: 24 }}>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+              <Lock size={15} />
+              <span>{language === 'bn' ? 'পাসওয়ার্ড' : 'Password'}</span>
             </label>
             <input
               type="password"
@@ -130,54 +124,19 @@ export const Login: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              style={{ height: '46px', fontSize: '0.95rem' }}
             />
           </div>
 
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ width: '100%', padding: '12px', fontSize: '1rem', marginTop: 8 }}
+            style={{ width: '100%', minHeight: '46px', fontSize: '1rem', fontWeight: 700 }}
             disabled={loading}
           >
-            {loading ? t.loading : 'Sign In to Dashboard'}
+            {loading ? t.loading : (language === 'bn' ? 'লগইন করুন' : 'Sign In to Portal')}
           </button>
         </form>
-
-        {/* Fixed 3 Administrators Quick Fill Section */}
-        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--border-color)' }}>
-          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', marginBottom: 10, textAlign: 'center' }}>
-            Authorized Administrator Identities (Fixed: 3)
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => setDemoAdmin(1)}
-              style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '6px 10px' }}
-            >
-              <span>1. Lead Teacher (Owner)</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Load & Fill</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => setDemoAdmin(2)}
-              style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '6px 10px' }}
-            >
-              <span>2. Academic Coordinator</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Load & Fill</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => setDemoAdmin(3)}
-              style={{ justifyContent: 'space-between', fontSize: '0.78rem', padding: '6px 10px' }}
-            >
-              <span>3. Accounts Assistant</span>
-              <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Load & Fill</span>
-            </button>
-          </div>
-        </div>
 
         {/* Language switch */}
         <div style={{ marginTop: 20, textAlign: 'center' }}>

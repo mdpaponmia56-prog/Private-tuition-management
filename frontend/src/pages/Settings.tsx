@@ -106,7 +106,7 @@ export const Settings: React.FC<SettingsProps> = ({ onOpenAdminPanel }) => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 20 }}>
         {/* Tuition Center Profile Form */}
         <div className="card">
           <div className="card-header">
@@ -299,7 +299,7 @@ export const Settings: React.FC<SettingsProps> = ({ onOpenAdminPanel }) => {
           <p style={{ marginBottom: 12 }}>
             The Private Tuition Management System runs on PostgreSQL with strict relational integrity, foreign key cascades, and transactional audit trails.
           </p>
-          <div style={{ background: '#0f172a', color: '#f8fafc', padding: 16, borderRadius: 'var(--radius-md)', fontFamily: 'monospace', fontSize: '0.82rem', marginBottom: 14 }}>
+          <div style={{ background: '#0f172a', color: '#f8fafc', padding: 14, borderRadius: 'var(--radius-md)', fontFamily: 'monospace', fontSize: '0.8rem', marginBottom: 14, overflowX: 'auto' }}>
             # Create a full encrypted/compressed snapshot of tuition records:<br />
             pg_dump "$DATABASE_URL" -F c -b -v -f tuition_backup_$(date +%Y%m%d).dump<br /><br />
             # Restore backup in a secure disaster recovery environment:<br />

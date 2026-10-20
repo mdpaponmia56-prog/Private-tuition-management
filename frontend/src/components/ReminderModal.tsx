@@ -76,14 +76,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ studentId, onClose
           ) : data ? (
             <div>
               {/* Summary Header */}
-              <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: 'var(--radius-md)', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 'var(--radius-md)', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>{data.studentName}</div>
-                  <div style={{ fontSize: '0.82rem', color: '#64748b' }}>Guardian Phone: <strong>{data.guardianPhone}</strong></div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>{data.studentName}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Guardian Phone: <strong>{data.guardianPhone}</strong></div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Total Outstanding Due</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--danger)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Outstanding Due</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--danger)' }}>
                     {formatBDT(data.totalDue, language)}
                   </div>
                 </div>
