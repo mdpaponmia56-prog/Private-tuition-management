@@ -12,7 +12,9 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || '',
   sessionSecret: process.env.SESSION_SECRET || 'fallback-secret-at-least-32-chars-long-security',
   sessionMaxAgeDays: parseInt(process.env.SESSION_MAX_AGE_DAYS || '7', 10),
-  storageDir: path.resolve(process.cwd(), process.env.STORAGE_DIR || './uploads'),
+  storageDir: process.env.VERCEL
+    ? '/tmp/uploads'
+    : path.resolve(process.cwd(), process.env.STORAGE_DIR || './uploads'),
   maxPhotoSizeMB: parseInt(process.env.MAX_PHOTO_SIZE_MB || '2', 10),
   
   // Administrator identities

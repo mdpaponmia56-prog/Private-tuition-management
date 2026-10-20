@@ -4,11 +4,22 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { config } from '../config/index.js';
 const photoDir = path.join(config.storageDir, 'photos');
-if (!fs.existsSync(photoDir)) {
-    fs.mkdirSync(photoDir, { recursive: true });
+try {
+    if (!fs.existsSync(photoDir)) {
+        fs.mkdirSync(photoDir, { recursive: true });
+    }
+}
+catch (err) {
+    console.warn('[Storage] Warning initializing photo directory:', err.message);
 }
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
+        try {
+            if (!fs.existsSync(photoDir)) {
+                fs.mkdirSync(photoDir, { recursive: true });
+            }
+        }
+        catch { }
         cb(null, photoDir);
     },
     filename: (_req, file, cb) => {
