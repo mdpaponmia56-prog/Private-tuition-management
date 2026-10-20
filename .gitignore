@@ -4,7 +4,7 @@ node_modules/
 .pnp.js
 
 # Production build artifacts
-dist/
+frontend/dist/
 build/
 
 # Environment files
