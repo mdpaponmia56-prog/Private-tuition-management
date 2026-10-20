@@ -1,8 +1,13 @@
-import app from '../backend/dist/app.js';
-
-export default function handler(req, res) {
-  if (req.url === '/api/ping' || req.url === '/ping') {
-    return res.status(200).json({ status: 'PONG', runtime: 'vercel-serverless', timestamp: new Date().toISOString() });
+export default async function handler(req, res) {
+  try {
+    const { default: app } = await import('../backend/dist/app.js');
+    return app(req, res);
+  } catch (err) {
+    console.error('[API Serverless Error]:', err);
+    return res.status(500).json({
+      error: 'API Serverless Function Crash',
+      message: err?.message || String(err),
+      stack: err?.stack,
+    });
   }
-  return app(req, res);
 }
